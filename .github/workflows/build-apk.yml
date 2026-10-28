@@ -2,6 +2,8 @@ name: Build APK
 
 on:
   workflow_dispatch:
+  schedule:
+    - cron: "23 19 * * 0"
   push:
     branches: [main]
 
@@ -35,6 +37,16 @@ jobs:
       - name: Jana ikon JOMAPZ
         continue-on-error: true
         run: npx @capacitor/assets generate --android
+
+      - name: Data OSM Malaysia (tempat, kamera, lampu isyarat, lorong)
+        continue-on-error: true
+        run: |
+          pip install osmium
+          curl -fL --retry 3 -o malaysia.osm.pbf https://download.geofabrik.de/asia/malaysia-singapore-brunei-latest.osm.pbf
+          ls -l malaysia.osm.pbf
+          mkdir -p www/data
+          python3 scripts/build_osm_data.py malaysia.osm.pbf www/data/osm.json
+          ls -l www/data/osm.json
 
       - name: Tandatangan tetap (supaya kemas kini boleh dipasang di atas versi lama)
         env:

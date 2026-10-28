@@ -720,6 +720,77 @@ function shareEta(){
   shareText('Saya dalam perjalanan ke '+destInfo.name+'. Sampai kira-kira '+malayClock(arr)+'. Lokasi semasa: https://maps.google.com/?q='+lat+','+lng,'Kongsi ETA');
 }
 
+
+/* ---------- data OSM dalam app (tanpa pelayan, tanpa internet) ---------- */
+var DATA=null,dataState=0,GRID={},LANEGRID={},GC=50;
+function cellKey(lat,lng){return Math.floor(lat*GC)+','+Math.floor(lng*GC)}
+function loadOsmData(){
+  return fetch('data/osm.json').then(function(r){if(!r.ok)throw new Error('x');return r.json()}).then(function(j){
+    DATA=j;
+    Object.keys(j.cats).forEach(function(c){
+      var g=GRID[c]={};
+      j.cats[c].forEach(function(r){var k=cellKey(r[0],r[1]);(g[k]||(g[k]=[])).push(r)});
+    });
+    (j.lanes||[]).forEach(function(w,i){
+      var seen={};
+      w.geometry=w.g.map(function(p){return {lat:p[0],lon:p[1]}});
+      w.tags=w.t;
+      w.g.forEach(function(p){var k=cellKey(p[0],p[1]);if(!seen[k]){seen[k]=1;(LANEGRID[k]||(LANEGRID[k]=[])).push(w)}});
+    });
+    dataState=1;
+    var vn=$('#verNote');if(vn&&j.v)vn.setAttribute('data-osm',j.v);
+  }).catch(function(){dataState=2});
+}
+function dataInBox(cat,s,w,n,e,limit){
+  var g=GRID[cat];if(!g)return [];
+  var out=[],i0=Math.floor(s*GC),i1=Math.floor(n*GC),j0=Math.floor(w*GC),j1=Math.floor(e*GC),i,j;
+  for(i=i0;i<=i1;i++)for(j=j0;j<=j1;j++){
+    var cell=g[i+','+j];if(!cell)continue;
+    for(var k=0;k<cell.length;k++){
+      var r=cell[k];
+      if(r[0]>=s&&r[0]<=n&&r[1]>=w&&r[1]<=e){out.push(r);if(limit&&out.length>=limit)return out}
+    }
+  }
+  return out;
+}
+function routeCells(R){
+  var cells={},last=-1e9,i;
+  for(i=0;i<R.coords.length;i++){
+    if(R.cum[i]-last<150&&i!==R.coords.length-1)continue;
+    last=R.cum[i];
+    var la=R.coords[i][1],lo=R.coords[i][0],a,b;
+    for(a=-1;a<=1;a++)for(b=-1;b<=1;b++)cells[(Math.floor(la*GC)+a)+','+(Math.floor(lo*GC)+b)]=1;
+  }
+  return Object.keys(cells);
+}
+function localEvents(R,evs){
+  var cells=routeCells(R);
+  var defs=[['cam','aes',40],['sig','sig',30],['toll','toll',70],['rnr','rr',450]];
+  defs.forEach(function(d){
+    var g=GRID[d[0]];if(!g)return;
+    cells.forEach(function(ck){
+      var cell=g[ck];if(!cell)return;
+      cell.forEach(function(r){
+        var pj=projectPt(R,r[0],r[1],0,R.coords.length-1);
+        if(pj.d>d[2])return;
+        evs.push({k:d[1],prog:pj.prog,lat:r[0],lng:r[1],name:(d[0]==='sig'?'':r[2])||'',maxspeed:d[0]==='cam'?(r[3]||''):'',shown:{},dead:false});
+      });
+    });
+  });
+}
+function localLanes(R){
+  (R.steps||[]).forEach(function(s){
+    if(!WANT[s.type]||!s.way_points)return;
+    var wp=s.way_points[0],t={s:s,wp:wp,lat:R.coords[wp][1],lng:R.coords[wp][0]};
+    var ways=[],seen={},a,b;
+    for(a=-1;a<=1;a++)for(b=-1;b<=1;b++){
+      var cell=LANEGRID[(Math.floor(t.lat*GC)+a)+','+(Math.floor(t.lng*GC)+b)];
+      if(cell)cell.forEach(function(w){if(!seen[w.t.lanes+w.g[0].join()]){seen[w.t.lanes+w.g[0].join()]=1;ways.push(w)}});
+    }
+    if(ways.length)matchLane(R,t,ways);
+  });
+}
+
 /* ---------- POI ---------- */
 function buildChips(){
   var box=$('#chips');box.innerHTML='';
@@ -746,6 +817,18 @@ function loadPOI(){
   if(map.getZoom()<12){clearPOI();toast('Zum masuk sedikit untuk lihat tempat');return}
   var b=map.getBounds();
   var s=b.getSouth().toFixed(3),w=b.getWest().toFixed(3),n=b.getNorth().toFixed(3),e=b.getEast().toFixed(3);
+  if(dataState===0){setTimeout(loadPOI,400);return}
+  if(dataState===1){
+    var per=Math.max(40,Math.floor(250/act.length)),els=[],capped=false,bb=map.getBounds();
+    act.forEach(function(L){
+      var rows=dataInBox(L.id,bb.getSouth(),bb.getWest(),bb.getNorth(),bb.getEast(),per);
+      if(rows.length>=per)capped=true;
+      rows.forEach(function(r){els.push({lat:r[0],lon:r[1],tags:{name:r[2]||''},_L:L})});
+    });
+    renderPOI(els,act);
+    if(capped)toast('Terlalu banyak tempat, zum masuk untuk lihat lebih');
+    return;
+  }
   var bbox=s+','+w+','+n+','+e;
   var parts=act.map(function(L){return 'nwr'+L.q+'('+bbox+');'}).join('');
   var q='[out:json][timeout:20];('+parts+');out center 250;';
@@ -770,8 +853,8 @@ function renderPOI(els,act){
     var lat=el.lat!==undefined?el.lat:(el.center&&el.center.lat);
     var lng=el.lon!==undefined?el.lon:(el.center&&el.center.lon);
     if(lat===undefined||lng===undefined)return;
-    var L=null;
-    for(var i=0;i<act.length;i++){if(act[i].m(t)){L=act[i];break}}
+    var L=el._L||null;
+    if(!L)for(var i=0;i<act.length;i++){if(act[i].m(t)){L=act[i];break}}
     if(!L)return;
     var d=document.createElement('div');d.className='poi';d.textContent=L.e;
     var name=t.name||t.brand||t.operator||L.n;
@@ -1128,7 +1211,7 @@ function prepareTrip(R){
     var part=q2.shift();if(!part)return Promise.resolve();
     return runChunk(part).then(worker);
   }
-  p=Promise.all([worker(),worker()]);
+  p=(dataState===1)?Promise.resolve(localEvents(R,evs)):Promise.all([worker(),worker()]);
   R.closed=[];
   return p.then(function(){
     addMyCams(R,evs);
@@ -1196,6 +1279,7 @@ function matchLane(R,t,ways){
   t.s.lanes={arr:best.arr,valid:valid};
 }
 function prepLanes(R){
+  if(dataState===1){localLanes(R);return Promise.resolve()}
   var targets=[];
   (R.steps||[]).forEach(function(s){
     if(WANT[s.type]&&s.way_points){var wp=s.way_points[0];targets.push({s:s,wp:wp,lat:R.coords[wp][1],lng:R.coords[wp][0]})}
@@ -1883,6 +1967,7 @@ function checkUpdate(manual){
 }
 document.addEventListener('DOMContentLoaded',function(){
   startI18n();
+  loadOsmData();
   setTimeout(window.__sharePing,1200);
   fetch('version.json').then(function(r){return r.ok?r.json():null}).then(function(j){if(j&&j.build){BUILD=j.build;$('#verNote').textContent='JOMAPZ build '+j.build+' · dibina oleh Pratama Yudha'}else{$('#verNote').textContent='JOMAPZ · dibina oleh Pratama Yudha'}}).catch(function(){});
   setTimeout(function(){checkUpdate(false)},7000);
