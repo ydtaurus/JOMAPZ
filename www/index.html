@@ -92,7 +92,12 @@ body.night .cc.aes{background:#4a1f1c;color:#ffd4d0;border-color:#7a2b26}
 .trip{display:block;width:100%;text-align:left;padding:12px;border:1px solid var(--line);border-radius:12px;margin-top:8px}
 .trip b{display:block;font-size:15px}
 .trip small{color:var(--mut);font-size:13px}
-#splash{position:fixed;inset:0;z-index:100;background:#050806 url(splash.jpg) center/cover no-repeat;transition:opacity .5s}
+#splash{position:fixed;inset:0;z-index:100;background:#050806;overflow:hidden;transition:opacity .5s}
+#splash .in{position:absolute;left:50%;top:50%;width:max(100vw,calc(100vh*852/1846));aspect-ratio:852/1846;transform:translate(-50%,-50%);background:url(splash.jpg) center/100% 100% no-repeat;animation:spBreath 2.6s ease-in-out infinite alternate}
+#splash .patch{position:absolute;left:50%;top:74.65%;width:15%;aspect-ratio:1;transform:translate(-50%,-50%);border-radius:50%;background:radial-gradient(circle,#05090a 58%,rgba(5,9,10,0) 72%)}
+#splash .spin{position:absolute;left:50%;top:74.65%;width:9.6%;aspect-ratio:1;margin:0;transform:translate(-50%,-50%);border-radius:50%;border:max(3px,.5vw) solid rgba(255,255,255,.07);border-top-color:#b6ff1a;border-right-color:#4fe03a;animation:spRot .9s linear infinite;box-shadow:0 0 14px rgba(120,255,40,.25)}
+@keyframes spRot{to{transform:translate(-50%,-50%) rotate(360deg)}}
+@keyframes spBreath{from{transform:translate(-50%,-50%) scale(1)}to{transform:translate(-50%,-50%) scale(1.025)}}
 #splash.out{opacity:0;pointer-events:none}
 #lanes{position:absolute;left:50%;transform:translateX(-50%);top:calc(var(--top) + 98px);z-index:6;display:flex;gap:4px;background:rgba(14,90,42,.96);padding:6px 8px;border-radius:12px;box-shadow:0 2px 10px rgba(0,0,0,.4)}
 #lanes svg{width:34px;height:46px;display:block}
@@ -108,7 +113,7 @@ body.night .cc.inc{background:#4a1f1c;color:#ffd4d0;border-color:#7a2b26}
 </style>
 </head>
 <body>
-<div id="splash" aria-hidden="true"></div>
+<div id="splash" aria-hidden="true"><div class="in"><div class="patch"></div><div class="spin"></div></div></div>
 <div id="map"></div>
 
 <div id="top">
