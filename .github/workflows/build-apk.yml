@@ -40,9 +40,18 @@ jobs:
         env:
           KS: ${{ secrets.JOMAPZ_KEYSTORE_B64 }}
         run: |
-          mkdir -p ~/.android
           if [ -n "$KS" ]; then
-            echo "$KS" | base64 -d > ~/.android/debug.keystore
+            echo "$KS" | tr -d ' \n\r' | base64 -d > "$HOME/jomapz.keystore"
+            keytool -list -keystore "$HOME/jomapz.keystore" -storepass android | tail -2
+            python3 - <<'PY'
+          import os,re
+          p='android/app/build.gradle'
+          s=open(p).read()
+          blk="    signingConfigs {\n        debug {\n            storeFile file('%s/jomapz.keystore')\n            storePassword 'android'\n            keyAlias 'androiddebugkey'\n            keyPassword 'android'\n        }\n    }\n" % os.environ['HOME']
+          s=re.sub(r'(\nandroid \{\n)', lambda m:m.group(1)+blk, s, count=1)
+          open(p,'w').write(s)
+          PY
+            grep -n "signingConfigs" -A3 android/app/build.gradle
             echo "Kunci tetap digunakan"
           else
             echo "::warning::JOMAPZ_KEYSTORE_B64 tiada. APK ini ditandatangan dengan kunci rawak dan tidak boleh dikemas kini di atas versi lama."
@@ -62,6 +71,13 @@ jobs:
         run: |
           chmod +x gradlew
           ./gradlew assembleDebug
+
+      - name: Sahkan tandatangan
+        env:
+          KS: ${{ secrets.JOMAPZ_KEYSTORE_B64 }}
+        run: |
+          keytool -printcert -jarfile android/app/build/outputs/apk/debug/app-debug.apk | grep -i "owner"
+          if [ -n "$KS" ]; then keytool -printcert -jarfile android/app/build/outputs/apk/debug/app-debug.apk | grep -q "O=Pratama Yudha" || { echo "::error::APK tidak guna kunci JOMAPZ"; exit 1; }; fi
 
       - name: Simpan APK
         uses: actions/upload-artifact@v4
