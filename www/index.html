@@ -1,0 +1,721 @@
+<!doctype html>
+<html lang="ms">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<title>JOMAPZ</title>
+<link rel="stylesheet" href="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css">
+<style>
+:root{--fg:#15171a;--mut:#667085;--pri:#1e8e3e;--bad:#d93025;--card:rgba(255,255,255,.97);--dim:1;--lift:0px;--top:env(safe-area-inset-top,0px);--bot:env(safe-area-inset-bottom,0px)}
+body.nav{--lift:74px}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;height:100%;font-family:system-ui,-apple-system,Roboto,sans-serif;color:var(--fg);overflow:hidden;background:#dfe3e8}
+button{font:inherit;color:inherit;border:0;background:none;cursor:pointer}
+[hidden]{display:none!important}
+#map{position:absolute;inset:0}
+#map .maplibregl-canvas{filter:brightness(var(--dim));transition:filter .4s}
+.maplibregl-ctrl-bottom-left,.maplibregl-ctrl-bottom-right{display:none}
+#top{position:absolute;left:10px;right:10px;top:calc(var(--top) + 10px);z-index:5}
+#searchRow{display:flex;background:var(--card);border-radius:14px;box-shadow:0 2px 10px rgba(0,0,0,.25);overflow:hidden}
+#q{flex:1;border:0;outline:0;padding:14px;font-size:16px;background:transparent;min-width:0}
+#goSearch{width:52px;font-size:20px}
+#results{background:var(--card);border-radius:14px;margin-top:6px;box-shadow:0 2px 10px rgba(0,0,0,.25);max-height:42vh;overflow:auto}
+#results div{padding:12px 14px;border-bottom:1px solid #eee;font-size:15px}
+#results div:last-child{border-bottom:0}
+#chips{display:flex;gap:8px;margin-top:8px;overflow-x:auto;padding-bottom:4px;scrollbar-width:none}
+#chips::-webkit-scrollbar{display:none}
+.chip{flex:none;display:flex;align-items:center;gap:5px;background:var(--card);border-radius:20px;padding:8px 12px;font-size:14px;box-shadow:0 1px 5px rgba(0,0,0,.25);border:2px solid transparent}
+.chip.on{background:#e6f4ea;border-color:var(--pri);color:#0b5a22}
+.poi{width:32px;height:32px;border-radius:50%;background:#fff;border:2px solid #fff;box-shadow:0 1px 5px rgba(0,0,0,.45);display:flex;align-items:center;justify-content:center;font-size:18px}
+#me{width:22px;height:22px;border-radius:50%;background:var(--pri);border:3px solid #fff;box-shadow:0 0 8px rgba(0,0,0,.55);position:relative}
+#me::after{content:"";position:absolute;left:3px;top:-11px;border:6px solid transparent;border-bottom:9px solid var(--pri);border-top:0}
+.fabs{position:absolute;right:12px;bottom:calc(var(--bot) + 20px + var(--lift));display:flex;flex-direction:column;gap:12px;z-index:5}
+.fab{width:52px;height:52px;border-radius:50%;background:var(--card);box-shadow:0 2px 8px rgba(0,0,0,.35);font-size:24px}
+#speedBox{position:absolute;left:12px;bottom:calc(var(--bot) + 20px + var(--lift));display:flex;gap:10px;align-items:center;z-index:5}
+#spdCard{background:var(--card);border-radius:14px;padding:6px 14px;text-align:center;box-shadow:0 2px 8px rgba(0,0,0,.35);min-width:70px}
+#spd{font-size:30px;font-weight:700;line-height:1.05}
+#spdCard small{color:var(--mut);font-size:12px}
+#spdCard.over{background:var(--bad);color:#fff}
+#spdCard.over small{color:#fff}
+#lim{width:52px;height:52px;border-radius:50%;background:#fff;border:6px solid var(--bad);display:flex;align-items:center;justify-content:center;font-size:19px;font-weight:700;box-shadow:0 2px 8px rgba(0,0,0,.35)}
+#lim.est{border:4px dashed #98a2b3;color:#667085;font-size:15px}
+#road{position:absolute;left:12px;right:80px;bottom:calc(var(--bot) + 92px + var(--lift));z-index:5;background:var(--card);border-radius:12px;padding:8px 12px;box-shadow:0 2px 8px rgba(0,0,0,.35);text-align:left;display:block}
+#roadName{font-weight:700;font-size:16px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#roadCoord{font-size:12px;color:var(--mut);margin-top:1px}
+body.prev .fabs,body.prev #speedBox,body.prev #road{display:none}
+#banner{position:absolute;left:10px;right:10px;top:calc(var(--top) + 10px);z-index:6;background:#0e5a2a;color:#fff;border-radius:16px;padding:12px 16px;display:flex;gap:14px;align-items:center;box-shadow:0 2px 12px rgba(0,0,0,.4)}
+#bArrow{font-size:42px;line-height:1;width:54px;text-align:center}
+#bDist{font-size:28px;font-weight:700;line-height:1.1}
+#bText{font-size:16px;opacity:.95}
+#sheet,#navbar{position:absolute;left:0;right:0;bottom:0;z-index:7;background:var(--card);border-radius:20px 20px 0 0;padding:16px 18px calc(var(--bot) + 16px);box-shadow:0 -2px 14px rgba(0,0,0,.3)}
+#sheet h3{margin:0 0 2px;font-size:17px}
+#sMeta{font-size:22px;font-weight:700;margin:4px 0 10px}
+#sMeta small{font-size:14px;font-weight:400;color:var(--mut)}
+.row{display:flex;gap:10px;align-items:center;margin-top:10px}
+.btn{flex:1;padding:14px;border-radius:12px;font-weight:600;font-size:16px;text-align:center}
+.btn.p{background:var(--pri);color:#fff}
+.btn.s{background:#eef0f3}
+.btn.d{background:var(--bad);color:#fff}
+#navbar{display:flex;align-items:center;justify-content:space-between;gap:12px;padding-top:12px;padding-bottom:calc(var(--bot) + 12px)}
+#navbar .eta{font-size:22px;font-weight:700}
+#navbar small{display:block;font-size:14px;font-weight:400;color:var(--mut)}
+#navbar .btn{flex:none;padding:12px 22px}
+#toast{position:absolute;left:50%;top:calc(var(--top) + 90px);transform:translateX(-50%);background:rgba(20,22,26,.92);color:#fff;border-radius:20px;padding:10px 16px;font-size:14px;z-index:20;max-width:88%;text-align:center;pointer-events:none}
+#settings{position:absolute;inset:0;z-index:30;background:rgba(0,0,0,.5);display:flex;align-items:flex-end}
+#settings .box{width:100%;background:#fff;border-radius:20px 20px 0 0;padding:18px 18px calc(var(--bot) + 18px);max-height:92%;overflow:auto}
+#settings h3{margin:0 0 8px}
+#settings label{display:block;font-size:14px;color:var(--mut);margin:12px 0 4px}
+#settings input[type=text],#settings select{width:100%;padding:12px;border:1px solid #ccd;border-radius:10px;font-size:15px;background:#fff}
+.sw{display:flex;justify-content:space-between;align-items:center;padding:10px 0;font-size:16px;color:var(--fg)}
+.sw input{width:22px;height:22px}
+.note{font-size:13px;color:var(--mut);line-height:1.5;margin:6px 0}
+.maplibregl-popup-content{padding:12px 14px;border-radius:12px;font-size:14px;min-width:170px}
+.maplibregl-popup-content b{display:block;margin-bottom:2px}
+.maplibregl-popup-content button{margin-top:8px;width:100%;background:var(--pri);color:#fff;border-radius:8px;padding:9px;font-weight:600}
+</style>
+</head>
+<body>
+<div id="map"></div>
+
+<div id="top">
+  <div id="searchRow"><input id="q" type="search" placeholder="Cari tempat..." enterkeyhint="search" autocomplete="off"><button id="goSearch" aria-label="Cari">🔍</button></div>
+  <div id="results" hidden></div>
+  <div id="chips"></div>
+</div>
+
+<div id="banner" hidden><div id="bArrow">⬆</div><div><div id="bDist"></div><div id="bText"></div></div></div>
+
+<button id="road" aria-label="Kongsi lokasi saya"><div id="roadName">Mencari nama jalan...</div><div id="roadCoord">Menunggu GPS</div></button>
+
+<div id="speedBox"><div id="spdCard"><div id="spd">0</div><small>km/j</small></div><div id="lim" hidden></div></div>
+
+<div class="fabs"><button class="fab" id="btnLoc" aria-label="Lokasi saya">◎</button><button class="fab" id="btnSet" aria-label="Tetapan">⚙</button></div>
+
+<div id="sheet" hidden>
+  <h3 id="sName"></h3>
+  <div id="sMeta"></div>
+  <label class="sw" style="padding:0"><span>Elak tol</span><input type="checkbox" id="avoidToll"></label>
+  <div class="row"><button class="btn s" id="btnCancel">Batal</button><button class="btn p" id="btnStart">Mula</button></div>
+</div>
+
+<div id="navbar" hidden>
+  <div class="eta" id="eta"></div>
+  <button class="btn d" id="btnEnd">Tamat</button>
+</div>
+
+<div id="toast" hidden></div>
+
+<div id="settings" hidden>
+  <div class="box">
+    <h3>Tetapan JOMAPZ</h3>
+    <label for="keyIn">OpenRouteService API key</label>
+    <input type="text" id="keyIn" placeholder="Tampal key di sini" autocomplete="off" autocapitalize="off" spellcheck="false">
+    <p class="note">Daftar percuma di openrouteservice.org, buat token, salin dan tampal di sini. Key disimpan dalam phone kau sahaja.</p>
+    <label for="selLang">Bahasa suara arahan</label>
+    <select id="selLang"><option value="ms">Bahasa Melayu</option><option value="en">English</option></select>
+    <div class="row"><button class="btn s" id="btnTest">Uji suara</button><button class="btn s" id="btnInstallVoice">Pasang suara</button></div>
+    <p class="note">Suara datang dari enjin suara Google dalam phone kau. Kalau suara Melayu senyap, tekan "Pasang suara" dan muat turun data Bahasa Melayu.</p>
+    <div class="sw"><span>Suara arahan</span><input type="checkbox" id="swVoice"></div>
+    <div class="sw"><span>Malapkan peta bila laju melebihi had</span><input type="checkbox" id="swDim"></div>
+    <div class="row"><button class="btn s" id="btnSetClose">Tutup</button><button class="btn p" id="btnSetSave">Simpan</button></div>
+  </div>
+</div>
+
+<script src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
+<script>
+(function(){
+'use strict';
+var $=function(s){return document.querySelector(s)};
+var LS={
+  get:function(k,d){try{var v=localStorage.getItem(k);return v===null?d:JSON.parse(v)}catch(e){return d}},
+  set:function(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}
+};
+var KEY=LS.get('orsKey','');
+var VOICE=LS.get('voice',true);
+var DIM=LS.get('dim',true);
+var LANG=LS.get('lang','ms');
+var ACTIVE=LS.get('layers',['fuel','toll']);
+var OVERPASS='https://overpass-api.de/api/interpreter';
+
+/* ---------- plugin native ---------- */
+var NATIVE=false;
+try{NATIVE=!!(window.Capacitor&&window.Capacitor.isNativePlatform&&window.Capacitor.isNativePlatform())}catch(e){}
+function plug(n){try{return NATIVE?window.Capacitor.registerPlugin(n):null}catch(e){return null}}
+var BG=plug('BackgroundGeolocation');
+var TTS=plug('TextToSpeech');
+var KA=plug('KeepAwake');
+var SH=plug('Share');
+
+var LAYERS=[
+ {id:'fuel',e:'⛽',n:'Pam minyak',q:'["amenity"="fuel"]',m:function(t){return t.amenity==='fuel'}},
+ {id:'mall',e:'🏬',n:'Mall',q:'["shop"="mall"]',m:function(t){return t.shop==='mall'}},
+ {id:'toll',e:'🛣',n:'Tol',q:'["barrier"="toll_booth"]',m:function(t){return t.barrier==='toll_booth'}},
+ {id:'cam',e:'📷',n:'Kamera laju',q:'["highway"="speed_camera"]',m:function(t){return t.highway==='speed_camera'}},
+ {id:'rnr',e:'🅿',n:'R&R',q:'["highway"~"^(services|rest_area)$"]',m:function(t){return t.highway==='services'||t.highway==='rest_area'}},
+ {id:'masjid',e:'🕌',n:'Masjid/surau',q:'["amenity"="place_of_worship"]["religion"="muslim"]',m:function(t){return t.amenity==='place_of_worship'&&t.religion==='muslim'}},
+ {id:'hosp',e:'🏥',n:'Hospital/klinik',q:'["amenity"~"^(hospital|clinic)$"]',m:function(t){return t.amenity==='hospital'||t.amenity==='clinic'}},
+ {id:'bengkel',e:'🔧',n:'Bengkel/tayar',q:'["shop"~"^(motorcycle_repair|car_repair|tyres|motorcycle)$"]',m:function(t){return ['motorcycle_repair','car_repair','tyres','motorcycle'].indexOf(t.shop)>=0}},
+ {id:'ev',e:'🔌',n:'Cas EV',q:'["amenity"="charging_station"]',m:function(t){return t.amenity==='charging_station'}},
+ {id:'atm',e:'🏧',n:'ATM',q:'["amenity"="atm"]',m:function(t){return t.amenity==='atm'}},
+ {id:'polis',e:'🚓',n:'Polis',q:'["amenity"="police"]',m:function(t){return t.amenity==='police'}},
+ {id:'sekolah',e:'🏫',n:'Sekolah',q:'["amenity"="school"]',m:function(t){return t.amenity==='school'}}
+];
+
+/* ---------- teks arahan (Melayu / English) ---------- */
+var STEP_ARROW={0:'⬅',1:'➡',2:'↰',3:'↱',4:'↖',5:'↗',6:'⬆',7:'⟳',8:'⟳',9:'⤶',10:'🏁',11:'⬆',12:'↖',13:'↗'};
+var TXT={
+  ms:{
+    types:{0:'Belok kiri',1:'Belok kanan',2:'Belok kiri tajam',3:'Belok kanan tajam',4:'Sedikit ke kiri',5:'Sedikit ke kanan',6:'Terus',7:'Masuk bulatan',8:'Keluar bulatan',9:'Pusingan U',10:'Anda sampai di destinasi',11:'Mulakan perjalanan',12:'Kekal di kiri',13:'Kekal di kanan'},
+    onto:' ke ',exit:', ambil simpang ke-',
+    inD:function(d,t){return 'Dalam '+d+' meter, '+t},
+    start:'Mulakan perjalanan',arrive:'Anda sampai di destinasi',reroute:'Mengira semula laluan',test:'Ini suara arahan JOMAPZ. Dalam dua ratus meter, belok kiri ke Jalan Puchong.',tts:'ms-MY'
+  },
+  en:{
+    types:{0:'Turn left',1:'Turn right',2:'Turn sharp left',3:'Turn sharp right',4:'Bear left',5:'Bear right',6:'Continue straight',7:'Enter the roundabout',8:'Exit the roundabout',9:'Make a U-turn',10:'You have arrived',11:'Start driving',12:'Keep left',13:'Keep right'},
+    onto:' onto ',exit:', take exit ',
+    inD:function(d,t){return 'In '+d+' meters, '+t},
+    start:'Starting navigation',arrive:'You have arrived',reroute:'Recalculating',test:'This is the JOMAPZ voice. In two hundred meters, turn left onto Jalan Puchong.',tts:'en-US'
+  }
+};
+function tx(){return TXT[LANG]||TXT.ms}
+function stepText(s){
+  var T=tx(),t=T.types[s.type]||T.types[6];
+  if(s.type===10)return t;
+  if(s.type===7&&s.exit_number)t+=T.exit+s.exit_number;
+  if(s.name&&s.name!=='-')t+=T.onto+s.name;
+  return t;
+}
+
+var map,meMarker,destMarker;
+var me=null;
+var heading=null;
+var follow=true;
+var route=null;
+var navActive=false;
+var destInfo=null;
+var wakeLock=null;
+var spoken={};
+var offCount=0;
+var lastReroute=0;
+var poiMarkers=[];
+var poiTimer=null;
+var poiCache={};
+
+function toast(msg,ms){
+  var t=$('#toast');t.textContent=msg;t.hidden=false;
+  clearTimeout(toast._t);toast._t=setTimeout(function(){t.hidden=true},ms||2800);
+}
+function haversine(lat1,lng1,lat2,lng2){
+  var R=6371000,p=Math.PI/180;
+  var a=Math.sin((lat2-lat1)*p/2)*Math.sin((lat2-lat1)*p/2)+Math.cos(lat1*p)*Math.cos(lat2*p)*Math.sin((lng2-lng1)*p/2)*Math.sin((lng2-lng1)*p/2);
+  return 2*R*Math.asin(Math.sqrt(a));
+}
+function fmtDist(m){
+  if(m>=1000)return (m/1000).toFixed(m>=10000?0:1)+' km';
+  return (Math.round(m/10)*10)+' m';
+}
+function fmtTime(s){
+  var m=Math.max(1,Math.round(s/60));
+  if(m<60)return m+' min';
+  return Math.floor(m/60)+' j '+(m%60)+' min';
+}
+function escapeHtml(s){
+  return String(s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]});
+}
+function setMode(nav,prev){
+  document.body.classList.toggle('nav',!!nav);
+  document.body.classList.toggle('prev',!!prev);
+}
+
+/* ---------- peta ---------- */
+function initMap(){
+  map=new maplibregl.Map({
+    container:'map',
+    style:{version:8,sources:{osm:{type:'raster',tiles:['https://tile.openstreetmap.org/{z}/{x}/{y}.png'],tileSize:256,maxzoom:19,attribution:'© OpenStreetMap'}},layers:[{id:'osm',type:'raster',source:'osm'}]},
+    center:[101.6869,3.139],zoom:11,attributionControl:false
+  });
+  var el=document.createElement('div');el.id='me';
+  meMarker=new maplibregl.Marker({element:el,rotationAlignment:'map',pitchAlignment:'map'}).setLngLat([101.6869,3.139]);
+  map.on('load',function(){
+    map.addSource('route',{type:'geojson',data:{type:'FeatureCollection',features:[]}});
+    map.addLayer({id:'route-casing',type:'line',source:'route',layout:{'line-cap':'round','line-join':'round'},paint:{'line-color':'#ffffff','line-width':10}});
+    map.addLayer({id:'route-line',type:'line',source:'route',layout:{'line-cap':'round','line-join':'round'},paint:{'line-color':'#1a73e8','line-width':6}});
+    schedulePOI();
+  });
+  map.on('dragstart',function(){setFollow(false)});
+  map.on('moveend',schedulePOI);
+  var lpTimer=null;
+  function cancelLP(){clearTimeout(lpTimer)}
+  map.on('touchstart',function(e){
+    cancelLP();
+    if(e.points&&e.points.length>1)return;
+    lpTimer=setTimeout(function(){
+      if(navActive)return;
+      setDestination(e.lngLat.lat,e.lngLat.lng,'Lokasi dipilih');
+    },700);
+  });
+  map.on('touchend',cancelLP);
+  map.on('touchmove',cancelLP);
+  map.on('dragstart',cancelLP);
+  map.on('zoomstart',cancelLP);
+  map.on('contextmenu',function(e){if(!navActive)setDestination(e.lngLat.lat,e.lngLat.lng,'Lokasi dipilih')});
+}
+function setFollow(v){
+  follow=v;
+  $('#btnLoc').style.color=v?'#1e8e3e':'';
+}
+
+/* ---------- GPS (berjalan di background bila navigasi) ---------- */
+var lastFix=null;
+var watchId=null,webWatch=null,watchSeq=0;
+function stopWatch(){
+  watchSeq++;
+  if(watchId!==null&&BG){try{BG.removeWatcher({id:watchId})}catch(e){}}
+  watchId=null;
+  if(webWatch!==null){try{navigator.geolocation.clearWatch(webWatch)}catch(e){}webWatch=null}
+}
+function startWatch(bg){
+  stopWatch();
+  var my=watchSeq;
+  if(BG){
+    var opts={requestPermissions:true,stale:false,distanceFilter:0};
+    if(bg){opts.backgroundTitle='JOMAPZ';opts.backgroundMessage='Navigasi sedang berjalan'}
+    BG.addWatcher(opts,function(loc,err){
+      if(err){
+        if(err.code==='NOT_AUTHORIZED'){toast('Benarkan akses lokasi untuk JOMAPZ dalam tetapan phone',5000);try{BG.openSettings()}catch(e){}}
+        return;
+      }
+      if(loc)onPos({coords:{latitude:loc.latitude,longitude:loc.longitude,accuracy:loc.accuracy,speed:loc.speed,heading:loc.bearing},timestamp:loc.time});
+    }).then(function(id){
+      if(my!==watchSeq){try{BG.removeWatcher({id:id})}catch(e){}}else watchId=id;
+    }).catch(function(e){toast('GPS gagal dimulakan')});
+  }else if(navigator.geolocation){
+    webWatch=navigator.geolocation.watchPosition(onPos,function(e){toast('GPS: '+e.message)},{enableHighAccuracy:true,maximumAge:0,timeout:15000});
+  }else{
+    toast('Peranti ini tiada GPS');
+  }
+}
+function onPos(p){
+  var c=p.coords;if(!c)return;
+  var t=p.timestamp||Date.now();
+  var sp=c.speed;
+  if(sp===null||sp===undefined||isNaN(sp)){
+    sp=0;
+    if(lastFix){var dt=(t-lastFix.t)/1000;if(dt>0)sp=haversine(lastFix.lat,lastFix.lng,c.latitude,c.longitude)/dt}
+  }
+  var first=!me;
+  me={lat:c.latitude,lng:c.longitude,acc:c.accuracy,t:t};
+  lastFix={lat:c.latitude,lng:c.longitude,t:t};
+  if(c.heading!==null&&c.heading!==undefined&&!isNaN(c.heading)&&sp>1.5)heading=c.heading;
+  var kmh=Math.round(sp*3.6);if(kmh<2)kmh=0;
+  $('#spd').textContent=kmh;
+  $('#roadCoord').textContent=me.lat.toFixed(5)+', '+me.lng.toFixed(5)+(me.acc?'  ±'+Math.round(me.acc)+' m':'');
+  meMarker.setLngLat([me.lng,me.lat]);
+  if(!meMarker._added){meMarker.addTo(map);meMarker._added=true}
+  if(heading!==null)meMarker.setRotation(heading);
+  if(first){map.jumpTo({center:[me.lng,me.lat],zoom:15});setFollow(true)}
+  else if(follow){
+    var o={center:[me.lng,me.lat],duration:900,essential:true};
+    if(navActive&&heading!==null)o.bearing=heading;
+    map.easeTo(o);
+  }
+  tick(kmh);
+  if(navActive&&route)updateNav();
+}
+
+/* ---------- nama jalan + had laju ---------- */
+var EST={motorway:110,trunk:90,primary:80,secondary:60,tertiary:50,unclassified:50,residential:40,living_street:20,service:30};
+var limit={val:null,known:false};
+var roadBusy=false;
+var lastRoad={lat:0,lng:0,t:0};
+var roadText='';
+function tick(kmh){
+  if(me&&!roadBusy){
+    var moved=haversine(lastRoad.lat,lastRoad.lng,me.lat,me.lng);
+    var age=Date.now()-lastRoad.t;
+    var need=kmh>5?(moved>100||age>15000):(!lastRoad.t||moved>40||age>45000);
+    if(need){
+      lastRoad={lat:me.lat,lng:me.lng,t:Date.now()};
+      lookupRoad(me.lat,me.lng);
+    }
+  }
+  var over=limit.known&&limit.val&&kmh>limit.val+3;
+  document.documentElement.style.setProperty('--dim',(DIM&&over)?'0.4':'1');
+  $('#spdCard').classList.toggle('over',!!over);
+}
+function segDist(lat,lng,A,B){
+  var kx=Math.cos(lat*Math.PI/180)*111320,ky=110540;
+  var ax=(A.lon-lng)*kx,ay=(A.lat-lat)*ky,bx=(B.lon-lng)*kx,by=(B.lat-lat)*ky;
+  var dx=bx-ax,dy=by-ay,L2=dx*dx+dy*dy;
+  var t=L2?Math.max(0,Math.min(1,-(ax*dx+ay*dy)/L2)):0;
+  var px=ax+t*dx,py=ay+t*dy;
+  return Math.sqrt(px*px+py*py);
+}
+function wayDist(w,lat,lng){
+  var g=w.geometry||[],best=1e9,i;
+  if(g.length===1)return haversine(lat,lng,g[0].lat,g[0].lon);
+  for(i=0;i<g.length-1;i++){var d=segDist(lat,lng,g[i],g[i+1]);if(d<best)best=d}
+  return best;
+}
+function lookupRoad(lat,lng){
+  roadBusy=true;
+  var ctl=('AbortController' in window)?new AbortController():null;
+  var to=setTimeout(function(){if(ctl)ctl.abort()},10000);
+  var q='[out:json][timeout:9];way(around:40,'+lat+','+lng+')[highway][highway!~"^(footway|path|cycleway|steps|pedestrian|track|bridleway|corridor|proposed|construction|platform)$"];out geom 25;';
+  fetch(OVERPASS,{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:'data='+encodeURIComponent(q),signal:ctl?ctl.signal:undefined})
+  .then(function(r){if(!r.ok)throw new Error('x');return r.json()})
+  .then(function(j){
+    var els=j.elements||[],best=null,bd=1e9;
+    els.forEach(function(w){var d=wayDist(w,lat,lng);if(d<bd){bd=d;best=w}});
+    var L=$('#lim');
+    if(!best||bd>40){
+      roadText='Jalan tidak dikenali';limit={val:null,known:false};L.hidden=true;
+    }else{
+      var t=best.tags||{};
+      var name=t.name||t['name:ms']||t['name:en']||'';
+      var ref=t.ref||'';
+      roadText=name?(name+(ref?' ('+ref+')':'')):(ref?ref:'Jalan tanpa nama');
+      var val=null,known=false;
+      if(t.maxspeed){
+        var n=parseInt(t.maxspeed,10);
+        if(!isNaN(n)){if(/mph/i.test(t.maxspeed))n=Math.round(n*1.609);val=n;known=true}
+      }
+      if(!known&&EST[t.highway])val=EST[t.highway];
+      limit={val:val,known:known};
+      if(val){L.hidden=false;L.textContent=known?val:'~'+val;L.classList.toggle('est',!known)}else L.hidden=true;
+    }
+    $('#roadName').textContent=roadText;
+  })
+  .catch(function(){
+    if(!roadText)$('#roadName').textContent='Nama jalan tidak tersedia (tiada internet?)';
+  })
+  .then(function(){clearTimeout(to);roadBusy=false});
+}
+function shareLocation(){
+  if(!me){toast('Menunggu GPS...');return}
+  var lat=me.lat.toFixed(6),lng=me.lng.toFixed(6);
+  var text='Lokasi saya: '+(roadText||'jalan tidak diketahui')+' ('+lat+', '+lng+') https://maps.google.com/?q='+lat+','+lng;
+  var done=function(){};
+  if(SH&&SH.share){SH.share({title:'Lokasi saya',text:text,dialogTitle:'Kongsi lokasi'}).catch(done);return}
+  if(navigator.share){navigator.share({title:'Lokasi saya',text:text}).catch(done);return}
+  try{navigator.clipboard.writeText(text);toast('Lokasi disalin')}catch(e){toast(text,6000)}
+}
+
+/* ---------- POI ---------- */
+function buildChips(){
+  var box=$('#chips');box.innerHTML='';
+  LAYERS.forEach(function(L){
+    var b=document.createElement('button');
+    b.className='chip'+(ACTIVE.indexOf(L.id)>=0?' on':'');
+    b.innerHTML='<span>'+L.e+'</span><span>'+L.n+'</span>';
+    b.onclick=function(){
+      var i=ACTIVE.indexOf(L.id);
+      if(i>=0)ACTIVE.splice(i,1);else ACTIVE.push(L.id);
+      LS.set('layers',ACTIVE);
+      b.classList.toggle('on',i<0);
+      schedulePOI();
+    };
+    box.appendChild(b);
+  });
+}
+function schedulePOI(){clearTimeout(poiTimer);poiTimer=setTimeout(loadPOI,700)}
+function clearPOI(){poiMarkers.forEach(function(m){m.remove()});poiMarkers=[]}
+function loadPOI(){
+  if(!map||!map.loaded())return;
+  var act=LAYERS.filter(function(L){return ACTIVE.indexOf(L.id)>=0});
+  if(!act.length){clearPOI();return}
+  if(map.getZoom()<12){clearPOI();toast('Zum masuk sedikit untuk lihat tempat');return}
+  var b=map.getBounds();
+  var s=b.getSouth().toFixed(3),w=b.getWest().toFixed(3),n=b.getNorth().toFixed(3),e=b.getEast().toFixed(3);
+  var bbox=s+','+w+','+n+','+e;
+  var parts=act.map(function(L){return 'nwr'+L.q+'('+bbox+');'}).join('');
+  var q='[out:json][timeout:20];('+parts+');out center 250;';
+  if(poiCache[q]&&Date.now()-poiCache[q].t<600000){renderPOI(poiCache[q].els,act);return}
+  fetch(OVERPASS,{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:'data='+encodeURIComponent(q)})
+  .then(function(r){if(!r.ok)throw new Error('Overpass '+r.status);return r.json()})
+  .then(function(j){
+    poiCache[q]={t:Date.now(),els:j.elements||[]};
+    renderPOI(j.elements||[],act);
+    if((j.elements||[]).length>=250)toast('Terlalu banyak tempat, zum masuk untuk lihat lebih');
+  })
+  .catch(function(){toast('Tak dapat muat tempat. Semak internet')});
+}
+function renderPOI(els,act){
+  clearPOI();
+  els.forEach(function(el){
+    var t=el.tags||{};
+    var lat=el.lat!==undefined?el.lat:(el.center&&el.center.lat);
+    var lng=el.lon!==undefined?el.lon:(el.center&&el.center.lon);
+    if(lat===undefined||lng===undefined)return;
+    var L=null;
+    for(var i=0;i<act.length;i++){if(act[i].m(t)){L=act[i];break}}
+    if(!L)return;
+    var d=document.createElement('div');d.className='poi';d.textContent=L.e;
+    var name=t.name||t.brand||t.operator||L.n;
+    var extra=(t.brand&&t.name&&t.brand!==t.name)?t.brand:L.n;
+    var popup=new maplibregl.Popup({offset:18,closeButton:false}).setHTML('<b>'+escapeHtml(name)+'</b>'+escapeHtml(extra)+'<br><button data-go="1">Navigasi ke sini</button>');
+    popup.on('open',function(){
+      var btn=popup.getElement().querySelector('[data-go]');
+      if(btn)btn.onclick=function(){popup.remove();setDestination(lat,lng,name)};
+    });
+    var m=new maplibregl.Marker({element:d}).setLngLat([lng,lat]).setPopup(popup).addTo(map);
+    poiMarkers.push(m);
+  });
+}
+
+/* ---------- carian ---------- */
+function doSearch(){
+  var text=$('#q').value.trim();
+  if(!text)return;
+  if(!KEY){openSettings();toast('Masukkan API key dulu');return}
+  var u='https://api.openrouteservice.org/geocode/search?api_key='+encodeURIComponent(KEY)+'&text='+encodeURIComponent(text)+'&boundary.country=MY&size=6';
+  if(me)u+='&focus.point.lon='+me.lng+'&focus.point.lat='+me.lat;
+  fetch(u).then(function(r){if(!r.ok)throw new Error('Carian gagal ('+r.status+')');return r.json()})
+  .then(function(j){
+    var box=$('#results');box.innerHTML='';
+    var fs=j.features||[];
+    if(!fs.length){box.innerHTML='<div>Tiada hasil</div>';box.hidden=false;return}
+    fs.forEach(function(f){
+      var d=document.createElement('div');d.textContent=f.properties.label;
+      d.onclick=function(){
+        box.hidden=true;$('#q').blur();
+        setDestination(f.geometry.coordinates[1],f.geometry.coordinates[0],f.properties.name||f.properties.label);
+      };
+      box.appendChild(d);
+    });
+    box.hidden=false;
+  })
+  .catch(function(e){toast(e.message)});
+}
+
+/* ---------- laluan ---------- */
+function setDestination(lat,lng,name){
+  if(!me){toast('Menunggu GPS...');return}
+  if(!KEY){openSettings();toast('Masukkan API key dulu');return}
+  destInfo={lat:lat,lng:lng,name:name};
+  fetchRoute(me,destInfo,$('#avoidToll').checked).then(function(r){
+    route=r;
+    drawRoute(r);
+    if(destMarker)destMarker.remove();
+    destMarker=new maplibregl.Marker({color:'#d93025'}).setLngLat([lng,lat]).addTo(map);
+    $('#sName').textContent=name;
+    $('#sMeta').innerHTML=fmtTime(r.dur)+' <small>· '+fmtDist(r.dist)+'</small>';
+    $('#sheet').hidden=false;
+    $('#top').hidden=true;
+    setMode(false,true);
+    setFollow(false);
+    var bb=new maplibregl.LngLatBounds();
+    r.coords.forEach(function(c){bb.extend(c)});
+    map.fitBounds(bb,{padding:{top:80,bottom:260,left:40,right:40},duration:700});
+  }).catch(function(e){toast(e.message,4500)});
+}
+function fetchRoute(from,to,avoidToll){
+  var body={coordinates:[[from.lng,from.lat],[to.lng,to.lat]],instructions:true,language:'en',units:'m'};
+  if(avoidToll)body.options={avoid_features:['tollways']};
+  return fetch('https://api.openrouteservice.org/v2/directions/driving-car/geojson',{
+    method:'POST',headers:{'Authorization':KEY,'Content-Type':'application/json'},body:JSON.stringify(body)
+  }).then(function(r){
+    if(!r.ok)return r.text().then(function(t){
+      var msg='Laluan gagal ('+r.status+')';
+      if(r.status===401||r.status===403)msg='API key tak sah atau tiada kebenaran';
+      else if(r.status===429)msg='Had harian API dicapai. Cuba lagi esok';
+      else if(r.status===404||/2010|2004/.test(t))msg='Tiada laluan ditemui ke tempat itu';
+      throw new Error(msg);
+    });
+    return r.json();
+  }).then(function(j){
+    var f=j.features&&j.features[0];
+    if(!f)throw new Error('Tiada laluan ditemui');
+    var coords=f.geometry.coordinates;
+    var steps=(f.properties.segments&&f.properties.segments[0]&&f.properties.segments[0].steps)||[];
+    var cum=[0],i;
+    for(i=1;i<coords.length;i++)cum.push(cum[i-1]+haversine(coords[i-1][1],coords[i-1][0],coords[i][1],coords[i][0]));
+    return {coords:coords,steps:steps,cum:cum,dist:f.properties.summary.distance,dur:f.properties.summary.duration,last:0,total:cum[cum.length-1]||f.properties.summary.distance};
+  });
+}
+function drawRoute(r){
+  var src=map.getSource('route');
+  if(src)src.setData({type:'Feature',geometry:{type:'LineString',coordinates:r.coords}});
+}
+function clearRoute(){
+  var src=map.getSource('route');
+  if(src)src.setData({type:'FeatureCollection',features:[]});
+  if(destMarker){destMarker.remove();destMarker=null}
+  route=null;
+}
+
+/* ---------- navigasi ---------- */
+function project(lat,lng){
+  var R=route,n=R.coords.length;
+  var kx=Math.cos(lat*Math.PI/180)*111320,ky=110540;
+  var best={d:1e12,prog:0,i:0};
+  function scan(a,b){
+    for(var i=a;i<b;i++){
+      var A=R.coords[i],B=R.coords[i+1];
+      var ax=(A[0]-lng)*kx,ay=(A[1]-lat)*ky,bx=(B[0]-lng)*kx,by=(B[1]-lat)*ky;
+      var dx=bx-ax,dy=by-ay,L2=dx*dx+dy*dy;
+      var t=L2?Math.max(0,Math.min(1,-(ax*dx+ay*dy)/L2)):0;
+      var px=ax+t*dx,py=ay+t*dy,d=Math.sqrt(px*px+py*py);
+      if(d<best.d){best={d:d,prog:R.cum[i]+t*(R.cum[i+1]-R.cum[i]),i:i}}
+    }
+  }
+  scan(Math.max(0,R.last-5),Math.min(n-1,R.last+80));
+  if(best.d>60){best={d:1e12,prog:0,i:0};scan(0,n-1)}
+  R.last=best.i||0;
+  return best;
+}
+function startNav(){
+  if(!route)return;
+  navActive=true;spoken={};offCount=0;route.last=0;
+  $('#sheet').hidden=true;$('#top').hidden=true;
+  $('#banner').hidden=false;$('#navbar').hidden=false;
+  setMode(true,false);
+  setFollow(true);
+  startWatch(true);
+  keepScreenOn(true);
+  map.easeTo({center:[me.lng,me.lat],zoom:17,pitch:45,duration:800});
+  speak(tx().start);
+  updateNav();
+}
+function endNav(){
+  navActive=false;
+  $('#banner').hidden=true;$('#navbar').hidden=true;$('#sheet').hidden=true;$('#top').hidden=false;
+  setMode(false,false);
+  clearRoute();
+  keepScreenOn(false);
+  startWatch(false);
+  stopSpeak();
+  map.easeTo({pitch:0,bearing:0,duration:600});
+  setFollow(true);
+}
+function updateNav(){
+  if(!route||!me)return;
+  var pr=project(me.lat,me.lng);
+  var remain=Math.max(0,route.total-pr.prog);
+  var secs=route.dur*(route.total?remain/route.total:0);
+  $('#eta').innerHTML=fmtTime(secs)+'<small>'+fmtDist(remain)+'</small>';
+  if(pr.d>50){
+    offCount++;
+    if(offCount>=3&&Date.now()-lastReroute>12000){doReroute();return}
+  }else offCount=0;
+  if(remain<30){
+    speak(tx().arrive);
+    $('#bArrow').textContent='🏁';$('#bDist').textContent='Sampai';$('#bText').textContent=destInfo?destInfo.name:'';
+    navActive=false;
+    setTimeout(endNav,4000);
+    return;
+  }
+  var steps=route.steps,s=0,i;
+  for(i=0;i<steps.length;i++){
+    if(route.cum[steps[i].way_points[0]]<=pr.prog+1)s=i;else break;
+  }
+  var nxt=steps[s+1];
+  if(!nxt)return;
+  var dist=route.cum[nxt.way_points[0]]-pr.prog;if(dist<0)dist=0;
+  var text=stepText(nxt);
+  $('#bArrow').textContent=STEP_ARROW[nxt.type]||'⬆';
+  $('#bDist').textContent=fmtDist(dist);
+  $('#bText').textContent=text;
+  var levels=[60,200,500],key=s+1,hit=null;
+  for(i=0;i<levels.length;i++){if(dist<=levels[i]){hit=levels[i];break}}
+  if(hit&&!spoken[key+'_'+hit]){
+    levels.forEach(function(l){if(l>=hit)spoken[key+'_'+l]=true});
+    speak(hit===60?text:tx().inD(hit,text));
+  }
+}
+function doReroute(){
+  lastReroute=Date.now();offCount=0;
+  speak(tx().reroute);
+  fetchRoute(me,destInfo,$('#avoidToll').checked).then(function(r){
+    route=r;spoken={};drawRoute(r);
+  }).catch(function(e){toast(e.message)});
+}
+
+/* ---------- suara ---------- */
+function speak(text){
+  if(!VOICE)return;
+  try{
+    if(TTS){
+      TTS.speak({text:text,lang:tx().tts,rate:1.0,pitch:1.0,volume:1.0,queueStrategy:0}).catch(function(){});
+      return;
+    }
+    var s=window.speechSynthesis;if(!s)return;
+    var u=new SpeechSynthesisUtterance(text);u.lang=tx().tts;u.rate=1;
+    s.cancel();s.speak(u);
+  }catch(e){}
+}
+function stopSpeak(){
+  try{if(TTS)TTS.stop().catch(function(){});else if(window.speechSynthesis)window.speechSynthesis.cancel()}catch(e){}
+}
+
+/* ---------- skrin kekal hidup ---------- */
+function keepScreenOn(on){
+  try{
+    if(KA){(on?KA.keepAwake():KA.allowSleep()).catch(function(){})}
+    else if(on&&navigator.wakeLock){navigator.wakeLock.request('screen').then(function(l){wakeLock=l}).catch(function(){})}
+    else if(!on&&wakeLock){wakeLock.release();wakeLock=null}
+  }catch(e){}
+}
+document.addEventListener('visibilitychange',function(){
+  if(document.visibilityState==='visible'&&navActive)keepScreenOn(true);
+});
+
+/* ---------- tetapan ---------- */
+function openSettings(){
+  $('#keyIn').value=KEY;$('#swVoice').checked=VOICE;$('#swDim').checked=DIM;$('#selLang').value=LANG;
+  $('#settings').hidden=false;
+}
+function closeSettings(){$('#settings').hidden=true}
+function saveSettings(){
+  KEY=$('#keyIn').value.trim();VOICE=$('#swVoice').checked;DIM=$('#swDim').checked;LANG=$('#selLang').value;
+  LS.set('orsKey',KEY);LS.set('voice',VOICE);LS.set('dim',DIM);LS.set('lang',LANG);
+  if(!DIM)document.documentElement.style.setProperty('--dim','1');
+  closeSettings();toast('Disimpan');
+}
+function testVoice(){
+  LANG=$('#selLang').value;
+  var wasVoice=VOICE;VOICE=true;
+  if(TTS&&TTS.isLanguageSupported){
+    TTS.isLanguageSupported({lang:tx().tts}).then(function(r){
+      if(r&&r.supported===false)toast('Suara '+(LANG==='ms'?'Melayu':'English')+' belum dipasang. Tekan "Pasang suara"',5000);
+    }).catch(function(){});
+  }
+  speak(tx().test);
+  VOICE=wasVoice;
+}
+function installVoice(){
+  if(TTS&&TTS.openInstall){TTS.openInstall().catch(function(){toast('Buka Tetapan phone > Output teks-ke-ucapan untuk pasang suara',6000)})}
+  else toast('Fungsi ini hanya ada dalam app Android',4000);
+}
+
+/* ---------- mula ---------- */
+document.addEventListener('DOMContentLoaded',function(){
+  buildChips();
+  initMap();
+  $('#goSearch').onclick=doSearch;
+  $('#q').addEventListener('keydown',function(e){if(e.key==='Enter')doSearch()});
+  $('#q').addEventListener('input',function(){if(!$('#q').value)$('#results').hidden=true});
+  $('#btnLoc').onclick=function(){
+    if(!me){toast('Menunggu GPS...');return}
+    setFollow(true);
+    map.easeTo({center:[me.lng,me.lat],zoom:Math.max(map.getZoom(),15),duration:600});
+  };
+  $('#btnSet').onclick=openSettings;
+  $('#btnSetClose').onclick=closeSettings;
+  $('#btnSetSave').onclick=saveSettings;
+  $('#btnTest').onclick=testVoice;
+  $('#btnInstallVoice').onclick=installVoice;
+  $('#road').onclick=shareLocation;
+  $('#btnStart').onclick=startNav;
+  $('#btnCancel').onclick=function(){$('#sheet').hidden=true;$('#top').hidden=false;setMode(false,false);clearRoute();setFollow(true)};
+  $('#btnEnd').onclick=endNav;
+  $('#avoidToll').onchange=function(){
+    if(destInfo&&me&&!navActive)setDestination(destInfo.lat,destInfo.lng,destInfo.name);
+  };
+  startWatch(false);
+  if(!KEY)setTimeout(function(){toast('Mula dengan masukkan API key di ⚙',4500)},1200);
+});
+})();
+</script>
+</body>
+</html>

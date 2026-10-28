@@ -1,0 +1,8 @@
+{
+  "appId": "my.jomapz.app",
+  "appName": "JOMAPZ",
+  "webDir": "www",
+  "server": {
+    "androidScheme": "https"
+  }
+}
