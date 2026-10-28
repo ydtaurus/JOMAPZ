@@ -92,6 +92,7 @@ body.night .cc.aes{background:#4a1f1c;color:#ffd4d0;border-color:#7a2b26}
 .trip{display:block;width:100%;text-align:left;padding:12px;border:1px solid var(--line);border-radius:12px;margin-top:8px}
 .trip b{display:block;font-size:15px}
 .trip small{color:var(--mut);font-size:13px}
+#results .gm{color:var(--pri);font-weight:600}
 #splash{position:fixed;inset:0;z-index:100;background:#050806;overflow:hidden;transition:opacity .5s}
 #splash .in{position:absolute;left:50%;top:50%;width:max(100vw,calc(100vh*852/1846));aspect-ratio:852/1846;transform:translate(-50%,-50%);background:url(splash.jpg) center/100% 100% no-repeat;animation:spBreath 2.6s ease-in-out infinite alternate}
 #splash .patch{position:absolute;left:50%;top:74.65%;width:15%;aspect-ratio:1;transform:translate(-50%,-50%);border-radius:50%;background:radial-gradient(circle,#05090a 58%,rgba(5,9,10,0) 72%)}
@@ -137,7 +138,7 @@ body.night .cc.inc{background:#4a1f1c;color:#ffd4d0;border-color:#7a2b26}
   <button class="fab" id="btnTrips" aria-label="Rekod perjalanan">🕘</button>
   <button class="fab" id="btnLoc" aria-label="Lokasi saya">◎</button>
   <button class="fab" id="btnSet" aria-label="Tetapan">⚙</button>
-  <button class="fab" id="btnPower" aria-label="Matikan JOMAPZ" style="font-size:22px">⏻</button>
+  <button class="fab" id="btnPower" aria-label="Matikan JOMAPZ"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 3v8"/><path d="M6.4 6.6a8 8 0 1 0 11.2 0"/></svg></button>
 </div>
 
 <div id="resume" class="ov" hidden>
@@ -196,6 +197,9 @@ body.night .cc.inc{background:#4a1f1c;color:#ffd4d0;border-color:#7a2b26}
 <div id="settings" class="ov" hidden>
   <div class="box">
     <h3>Tetapan JOMAPZ</h3>
+    <label for="selLang">Bahasa / Language</label>
+    <select id="selLang"><option value="ms">Bahasa Melayu</option><option value="en">English</option></select>
+    <p class="note">Bahasa paparan dan suara arahan. App dimuat semula bila bahasa ditukar.</p>
     <h4>Perjalanan</h4>
     <label for="selVeh">Kenderaan</label>
     <select id="selVeh"><option value="car">Kereta</option><option value="moto">Motosikal</option></select>
@@ -227,14 +231,12 @@ body.night .cc.inc{background:#4a1f1c;color:#ffd4d0;border-color:#7a2b26}
 
     <h4>Sentiasa aktif</h4>
     <div class="sw"><span>Kekal berjalan di latar belakang (macam Waze)</span><input type="checkbox" id="swAlways"></div>
-    <p class="note">JOMAPZ kekal hidup dengan notifikasi tetap sehingga kau tekan butang Matikan (⏻) atau Force close. Supaya phone tak matikan JOMAPZ: buka Tetapan phone, Aplikasi, JOMAPZ, Bateri, pilih Tanpa had (Unrestricted).</p>
+    <p class="note">JOMAPZ kekal hidup dengan notifikasi tetap sehingga kau tekan butang Matikan (ikon power) atau Force close. Supaya phone tak matikan JOMAPZ: buka Tetapan phone, Aplikasi, JOMAPZ, Bateri, pilih Tanpa had (Unrestricted).</p>
     <p class="note" id="verNote"></p>
     <div class="row"><button class="btn s" id="btnCheckUpd">Semak kemas kini</button></div>
     <div class="row"><button class="btn d" id="btnShutdown">Matikan JOMAPZ</button></div>
 
     <h4>Suara</h4>
-    <label for="selLang">Bahasa suara arahan</label>
-    <select id="selLang"><option value="ms">Bahasa Melayu</option><option value="en">English</option></select>
     <div class="row"><button class="btn s" id="btnTest">Uji suara</button><button class="btn s" id="btnInstallVoice">Pasang suara</button></div>
     <p class="note">Suara datang dari enjin suara Google dalam phone kau. Kalau suara Melayu senyap, tekan "Pasang suara" dan muat turun data Bahasa Melayu.</p>
     <div class="sw"><span>Suara arahan</span><input type="checkbox" id="swVoice"></div>
@@ -685,6 +687,7 @@ function lookupRoad(lat,lng){
   .then(function(){clearTimeout(to);roadBusy=false});
 }
 function shareText(text,title){
+  text=T(text);title=T(title);
   var done=function(){};
   if(SH&&SH.share){SH.share({title:title,text:text,dialogTitle:title}).catch(done);return}
   if(navigator.share){navigator.share({title:title,text:text}).catch(done);return}
@@ -838,14 +841,24 @@ function parseCoord(t){
   if(la<-5||la>10||lo<95||lo>121)return null;
   return {lat:la,lng:lo};
 }
+function openGoogle(text){
+  toast('Pilih tempat di Google Maps, tekan Kongsi, kemudian pilih JOMAPZ',6000);
+  setTimeout(function(){location.href='geo:0,0?q='+encodeURIComponent(text)},900);
+}
+function addGoogleRow(box,text){
+  var d=document.createElement('div');d.className='gm';d.textContent='Cari di Google Maps';
+  d.onclick=function(){box.hidden=true;openGoogle(text)};
+  box.appendChild(d);
+}
 function showResults(items,text){
   var box=$('#results');box.innerHTML='';
-  if(!items.length){box.innerHTML='<div>Tiada hasil. Cuba nama jalan atau taman, tampal koordinat/link Google Maps, atau tekan lama pada peta.</div>';box.hidden=false;return}
+  if(!items.length){box.innerHTML='<div>Tiada hasil. Cuba nama jalan atau taman, tampal koordinat/link Google Maps, atau tekan lama pada peta.</div>';addGoogleRow(box,text);box.hidden=false;return}
   items.forEach(function(it){
     var d=document.createElement('div');d.textContent=it.label||text;
     d.onclick=function(){box.hidden=true;$('#q').blur();setDestination(it.lat,it.lng,it.name||it.label)};
     box.appendChild(d);
   });
+  addGoogleRow(box,text);
   box.hidden=false;
 }
 function searchPhoton(text){
@@ -1638,7 +1651,7 @@ function openSettings(){
   $('#swAes').checked=!!SHOW.aes;$('#swRr').checked=!!SHOW.rr;$('#swSig').checked=!!SHOW.sig;$('#swToll').checked=!!SHOW.toll;
   $('#selChip').value=String(CHIPSEC);
   $('#swInc').checked=!!SHOW.inc;$('#ttKey').value=TTKEY;$('#swAlways').checked=ALWAYS;
-  $('#tolNote').textContent=TOL.updated?('Harga tol rujukan dikemas kini: '+TOL.updated+(TOL.source?'. Sumber: '+TOL.source:'')+'. Semak papan tanda tol untuk harga sebenar.'):'Jadual harga tol belum diisi.';
+  $('#tolNote').textContent=TOL.updated?('Harga tol rujukan dikemas kini: '+TOL.updated+'. Sumber: motorist.my. Semak papan tanda tol untuk harga sebenar.'):'Jadual harga tol belum diisi.';
   $('#settings').hidden=false;
 }
 function closeSettings(){$('#settings').hidden=true}
@@ -1656,7 +1669,9 @@ function saveSettings(){
   if(!DIM)document.documentElement.style.setProperty('--dim','1');
   $('#avoidHwy').checked=HWY;
   applyTheme();
+  var langChanged=LS.get('langApplied','ms')!==LANG;
   closeSettings();toast('Disimpan');
+  if(langChanged){LS.set('langApplied',LANG);setTimeout(function(){location.reload()},600)}
 }
 function testVoice(){
   LANG=$('#selLang').value;
@@ -1675,6 +1690,98 @@ function installVoice(){
 }
 
 /* ---------- mula ---------- */
+
+
+/* ---------- bahasa paparan (ms / en) ---------- */
+var EN_FULL={
+'Cari tempat...':'Search places...','Cari':'Search','Kongsi lokasi saya':'Share my location','Kompas':'Compass','Tandakan kamera laju di sini':'Mark a speed camera here','Rekod perjalanan':'Trip history','Lokasi saya':'My location','Tetapan':'Settings','Matikan JOMAPZ':'Shut down JOMAPZ',
+'Mencari nama jalan...':'Finding road name...','Menunggu GPS':'Waiting for GPS','Menunggu GPS...':'Waiting for GPS...','Sambung perjalanan?':'Resume trip?','Buang':'Discard','Sambung':'Resume','Kemas kini tersedia':'Update available','Nanti':'Later','Kemas kini':'Update',
+'Mod motosikal: enjin laluan tak tahu jalan yang melarang motosikal. Semak papan tanda dan guna "Elak lebuh raya" jika perlu.':'Motorcycle mode: the routing engine does not know which roads ban motorcycles. Check road signs and use "Avoid highways" if needed.',
+'Elak tol':'Avoid tolls','Elak lebuh raya':'Avoid highways','Simpan tempat ini sebagai...':'Save this place as...','Rumah':'Home','Kerja':'Work','Kegemaran':'Favourite','Batal':'Cancel','Mula':'Start','Kongsi':'Share','Tamat':'End',
+'Menyediakan perjalanan':'Preparing your trip','Laluan dan arahan belok':'Route and turn directions','Kamera, R&R, tol dan lampu isyarat':'Cameras, R&R, tolls and traffic lights','Suara arahan':'Voice guidance',
+'Selepas ini navigasi terus berjalan walaupun internet terputus. Peta yang belum dilihat mungkin kosong tanpa internet.':'After this, navigation keeps running even if the internet drops. Map areas you have not viewed may be blank offline.',
+'Tutup':'Close','Tetapan JOMAPZ':'JOMAPZ settings','Bahasa paparan dan suara arahan. App dimuat semula bila bahasa ditukar.':'Display and voice language. The app reloads when you change language.',
+'Perjalanan':'Trip','Kenderaan':'Vehicle','Kereta':'Car','Motosikal':'Motorcycle','Laluan lalai':'Default route','Terpantas':'Fastest','Terpendek':'Shortest','Seimbang':'Balanced','Motosikal: elak lebuh raya (lalai)':'Motorcycle: avoid highways (default)',
+'Paparan':'Display','Siang / malam':'Day / night','Auto (ikut matahari)':'Auto (follow sun)','Siang':'Day','Malam':'Night','Zoom automatik ikut laju':'Auto-zoom with speed','Tahap zoom':'Zoom level','Dekat':'Close','Sederhana':'Medium','Luas':'Wide','Malapkan peta bila laju melebihi had':'Dim the map when over the speed limit',
+'Di skrin':'On screen','Amaran kamera laju':'Speed camera alerts','R&R di hadapan':'Rest areas ahead','Lampu isyarat':'Traffic lights','Tol di hadapan':'Tolls ahead','Jalan ditutup / kerja jalan':'Road closures / roadworks','Tempoh chip di skrin':'Alert chip duration','3 saat':'3 seconds','5 saat':'5 seconds','10 saat':'10 seconds',
+'TomTom API key (pilihan, untuk jalan ditutup dan kerja jalan)':'TomTom API key (optional, for road closures and roadworks)','Kosongkan jika tak guna':'Leave empty if unused',
+'Percuma tanpa kad kredit, had 2,500 permintaan sebulan. Setiap perjalanan guna 1 hingga 4 permintaan. Daftar di developer.tomtom.com. Tanpa key, ciri ini senyap.':'Free with no credit card, limit 2,500 requests a month. Each trip uses 1 to 4 requests. Register at developer.tomtom.com. Without a key this feature stays silent.',
+'Sentiasa aktif':'Always on','Kekal berjalan di latar belakang (macam Waze)':'Keep running in the background (like Waze)',
+'JOMAPZ kekal hidup dengan notifikasi tetap sehingga kau tekan butang Matikan (ikon power) atau Force close. Supaya phone tak matikan JOMAPZ: buka Tetapan phone, Aplikasi, JOMAPZ, Bateri, pilih Tanpa had (Unrestricted).':'JOMAPZ stays alive with a persistent notification until you press the Shutdown (power icon) button or force close. To stop your phone killing JOMAPZ: open phone Settings, Apps, JOMAPZ, Battery, choose Unrestricted.',
+'Semak kemas kini':'Check for updates','Suara':'Voice','Uji suara':'Test voice','Pasang suara':'Install voice',
+'Suara datang dari enjin suara Google dalam phone kau. Kalau suara Melayu senyap, tekan "Pasang suara" dan muat turun data Bahasa Melayu.':'Voice comes from the Google voice engine on your phone. If the Malay voice is silent, tap "Install voice" and download the Malay voice data.',
+'Simpan':'Save','Jalan tidak dikenali':'Unknown road','Jalan tanpa nama':'Unnamed road','Nama jalan tidak tersedia (tiada internet?)':'Road name unavailable (no internet?)',
+'Tiada hasil. Cuba nama jalan atau taman, tampal koordinat/link Google Maps, atau tekan lama pada peta.':'No results. Try a road or area name, paste coordinates or a Google Maps link, or long-press the map.',
+'Cari di Google Maps':'Search on Google Maps','Pilih tempat di Google Maps, tekan Kongsi, kemudian pilih JOMAPZ':'Pick the place in Google Maps, tap Share, then choose JOMAPZ',
+'Link pendek Google tak boleh dibaca. Buka link itu, salin link penuh dari bar alamat (ada @3.xxx,101.xxx) atau tampal koordinat.':'Short Google links cannot be read. Open the link, copy the full link from the address bar (contains @3.xxx,101.xxx) or paste coordinates.',
+'Lokasi dipilih':'Selected location','Navigasi ke sini':'Navigate here','Tandakan kamera laju':'Mark speed camera','Lokasi dari link':'Location from link','Lokasi dikongsi':'Shared location',
+'Tiada sambungan internet':'No internet connection','Tiada internet':'No internet','Pelayan carian tak dapat dicapai. Cuba lagi':'Search server unreachable. Try again','Pelayan laluan sibuk. Cuba sebentar lagi':'Routing server busy. Try again shortly','Pelayan tempat sibuk. Cuba lagi automatik...':'Places server busy. Retrying automatically...','Tiada sambungan ke pelayan laluan':'Cannot reach the routing server',
+'Tiada laluan ditemui':'No route found','Tiada laluan ditemui ke tempat itu':'No route found to that place','Lokasi terlalu jauh dari jalan':'Location too far from a road','Mengira laluan...':'Calculating route...','Mengira laluan sama...':'Calculating the same route...','Mengira semula laluan':'Recalculating',
+'Zum masuk sedikit untuk lihat tempat':'Zoom in a little to see places','Terlalu banyak tempat, zum masuk untuk lihat lebih':'Too many places, zoom in to see more',
+'Sebahagian data sepanjang laluan tak dapat dimuat. Navigasi tetap berjalan.':'Some data along the route could not be loaded. Navigation continues.','Jalan ditutup di laluan. Mencari laluan lain...':'Road closed on the route. Looking for another route...','Laluan ditukar untuk elak jalan ditutup':'Route changed to avoid a road closure','Tiada laluan lain. Jalan ditutup mungkin di laluan kau.':'No other route. A closed road may be on your route.',
+'Kamera laju ditandakan. Akan muncul sebagai amaran di laluan.':'Speed camera marked. It will appear as a warning on your route.','Anda sudah hampir di penghujung laluan itu':'You are already near the end of that route','Perjalanan disimpan dalam Rekod':'Trip saved in History','Disimpan':'Saved','Dipadam':'Deleted','Disalin':'Copied',
+'Benarkan akses lokasi untuk JOMAPZ dalam tetapan phone':'Allow location access for JOMAPZ in phone settings','GPS tak ditemui':'GPS not found','GPS gagal dimulakan':'GPS failed to start','Peranti ini tiada GPS':'This device has no GPS',
+'Fungsi ini hanya ada dalam app Android':'This feature is only in the Android app','Suara belum dipasang. Buka Tetapan, tekan "Pasang suara".':'Voice not installed. Open Settings and tap "Install voice".','Buka Tetapan phone > Output teks-ke-ucapan untuk pasang suara':'Open phone Settings > Text-to-speech output to install a voice',
+'Cari tempat dulu, kemudian pilih "Simpan tempat ini sebagai..." di lembaran laluan':'Search for a place first, then choose "Save this place as..." on the route sheet',
+'Matikan JOMAPZ sepenuhnya? Navigasi, GPS dan suara akan berhenti.':'Shut down JOMAPZ completely? Navigation, GPS and voice will stop.','Tutup app secara manual':'Close the app manually','Navigasi sedang berjalan':'Navigation is running',
+'Jadual harga tol belum diisi.':'Toll price table not filled in yet.','Tidak dapat semak kemas kini sekarang':'Cannot check for updates right now','Utara di atas':'North up','Arah perjalanan di atas':'Heading up',
+'Ulang laluan ini':'Repeat this route','Kembali':'Back','Laluan sama':'Same route','Ada tol':'Has toll','Tiada tol':'No toll','Bebas tol':'Toll-free',
+'Pam minyak':'Petrol','Plaza tol':'Toll plaza','Masjid/surau':'Mosque','Hospital/klinik':'Hospital/clinic','Bengkel/tayar':'Workshop/tyres','Cas EV':'EV charging','Polis':'Police','Sekolah':'School','Lorong motor':'Motorcycle lane','Kamera laju':'Speed camera','Tol':'Toll','Destinasi':'Destination','Sampai':'Arrive',
+'Mengira':'Calculating','Padam':'Delete','Rekod':'History'
+};
+var EN_PH=[
+[/Bebas tol/g,'Toll-free'],[/Ada tol/g,'Has toll'],[/Tiada tol/g,'No toll'],[/Kamera laju/g,'Speed camera'],[/Lampu isyarat/g,'Traffic light'],[/Jalan ditutup/g,'Road closed'],[/Kerja jalan/g,'Roadworks'],
+[/\bTol\b/g,'Toll'],[/km\/j/g,'km/h'],[/ · had /g,' · limit '],[/ · tiba /g,' · arrive '],[/\btiba\b/g,'arrive'],[/Laju tertinggi/g,'Top speed'],[/Purata/g,'Average'],[/ · Masa /g,' · Time '],[/Saya dalam perjalanan ke /g,"I'm on my way to "],
+[/Lokasi saya: /g,'My location: '],[/Disimpan: /g,'Saved: '],[/Padam /g,'Delete '],[/Versi baru \(build (\d+)\) sudah sedia\. Kau guna build (\d+)\. Tekan Kemas kini, muat turun APK, kemudian ketuk fail itu untuk install\. Data tersimpan kekal\./g,'New version (build $1) is ready. You are on build $2. Tap Update, download the APK, then tap the file to install. Your saved data stays.'],
+[/Sudah versi terkini \(build (\d+)\)/g,'Already up to date (build $1)'],[/dibina oleh/g,'built by'],[/Ke (.+)\. Perjalanan terakhir terhenti\. Sambung dari lokasi sekarang\?/g,'To $1. Your last trip was interrupted. Resume from your current location?'],
+[/Harga tol rujukan dikemas kini: /g,'Reference toll prices updated: '],[/Sumber: /g,'Source: '],[/Semak papan tanda tol untuk harga sebenar\./g,'Check the toll signboard for the actual price.'],[/Jalan tidak dikenali/g,'Unknown road'],[/ ke /g,' to '],[/\bSuara (Melayu|English) belum dipasang\. Tekan "Pasang suara"/g,'Voice not installed. Tap "Install voice"'],
+[/Carian gagal/g,'Search failed'],[/Laluan gagal/g,'Route failed'],[/\bAhd\b/g,'Sun'],[/\bIsn\b/g,'Mon'],[/\bSel\b/g,'Tue'],[/\bRab\b/g,'Wed'],[/\bKha\b/g,'Thu'],[/\bJum\b/g,'Fri'],[/\bSab\b/g,'Sat'],
+[/\bMac\b/g,'Mar'],[/\bMei\b/g,'May'],[/\bOgo\b/g,'Aug'],[/\bOkt\b/g,'Oct'],[/\bDis\b/g,'Dec'],[/ saat\b/g,' sec'],[/(\d+:\d\d) pagi/g,'$1 am'],[/(\d+:\d\d) tengah hari/g,'$1 pm'],[/(\d+:\d\d) (petang|malam)/g,'$1 pm'],[/Sampai kira-kira /g,'Arriving around '],[/Lokasi semasa: /g,'Current location: '],[/jalan tidak diketahui/g,'unknown road'],[/Kongsi ETA/g,'Share ETA']
+];
+function T(s){
+  if(LANG!=='en'||!s||typeof s!=='string')return s;
+  var k=s.trim();
+  if(Object.prototype.hasOwnProperty.call(EN_FULL,k))return s.replace(k,EN_FULL[k]);
+  var o=s;for(var i=0;i<EN_PH.length;i++)o=o.replace(EN_PH[i][0],EN_PH[i][1]);
+  return o;
+}
+function trNode(n){
+  if(!n)return;
+  if(n.nodeType===3){var v=n.nodeValue,t=T(v);if(t!==v)n.nodeValue=t;return}
+  if(n.nodeType!==1||n.tagName==='SCRIPT'||n.tagName==='STYLE')return;
+  ['placeholder','aria-label','title'].forEach(function(a){if(n.hasAttribute(a)){var v=n.getAttribute(a),t=T(v);if(t!==v)n.setAttribute(a,t)}});
+  for(var c=n.firstChild;c;c=c.nextSibling)trNode(c);
+}
+function startI18n(){
+  if(LANG!=='en')return;
+  document.documentElement.lang='en';
+  trNode(document.body);
+  new MutationObserver(function(ms){
+    ms.forEach(function(m){
+      if(m.type==='characterData')trNode(m.target);
+      else if(m.type==='attributes')trNode(m.target);
+      else for(var i=0;i<m.addedNodes.length;i++)trNode(m.addedNodes[i]);
+    });
+  }).observe(document.body,{childList:true,subtree:true,characterData:true,attributes:true,attributeFilter:['placeholder','aria-label','title']});
+  var _c=window.confirm;window.confirm=function(m){return _c.call(window,T(m))};
+}
+
+
+/* ---------- terima kongsi dari Google Maps ---------- */
+function onShared(raw){
+  var o;try{o=JSON.parse(raw)}catch(e){return}
+  if(!o)return;
+  var url=o.url||'',text=o.text||'';
+  var c=parseCoord(url)||parseCoord(text);
+  var name=(text.split(/\r?\n/)[0]||'').replace(/https?:\/\/\S+/g,'').trim();
+  var tries=0;
+  (function go(){
+    if(!me&&tries++<40){setTimeout(go,500);return}
+    if(c){setDestination(c.lat,c.lng,name||'Lokasi dikongsi');return}
+    if(name){$('#q').value=name;doSearch()}
+  })();
+}
+window.__sharePing=function(){try{if(window.JomapzNative){var s=JomapzNative.takeShare();if(s)onShared(s)}}catch(e){}};
 
 /* ---------- kemas kini app ---------- */
 function openUrl(u){try{if(BR){BR.open({url:u});return}}catch(e){}window.open(u,'_blank')}
@@ -1701,6 +1808,8 @@ function checkUpdate(manual){
   }).catch(function(){if(manual)toast('Tidak dapat semak kemas kini sekarang',3500)});
 }
 document.addEventListener('DOMContentLoaded',function(){
+  startI18n();
+  setTimeout(window.__sharePing,1200);
   fetch('version.json').then(function(r){return r.ok?r.json():null}).then(function(j){if(j&&j.build){BUILD=j.build;$('#verNote').textContent='JOMAPZ build '+j.build+' · dibina oleh Pratama Yudha'}else{$('#verNote').textContent='JOMAPZ · dibina oleh Pratama Yudha'}}).catch(function(){});
   setTimeout(function(){checkUpdate(false)},7000);
   $('#btnCheckUpd').onclick=function(){checkUpdate(true)};

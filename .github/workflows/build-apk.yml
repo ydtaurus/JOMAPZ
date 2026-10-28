@@ -57,6 +57,19 @@ jobs:
             echo "::warning::JOMAPZ_KEYSTORE_B64 tiada. APK ini ditandatangan dengan kunci rawak dan tidak boleh dikemas kini di atas versi lama."
           fi
 
+      - name: Terima kongsi dari Google Maps (Android)
+        run: |
+          cp native/MainActivity.java android/app/src/main/java/my/jomapz/app/MainActivity.java
+          python3 - <<'PY'
+          p='android/app/src/main/AndroidManifest.xml'
+          s=open(p).read()
+          f='<intent-filter><action android:name="android.intent.action.SEND" /><category android:name="android.intent.category.DEFAULT" /><data android:mimeType="text/plain" /></intent-filter>'
+          i=s.index('</activity>')
+          s=s[:i]+f+s[i:]
+          open(p,'w').write(s)
+          PY
+          grep -n "SEND" android/app/src/main/AndroidManifest.xml
+
       - name: Nombor versi
         run: |
           echo '{"build":${{ github.run_number }}}' > www/version.json
