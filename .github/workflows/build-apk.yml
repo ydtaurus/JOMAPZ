@@ -82,6 +82,22 @@ jobs:
           PY
           grep -n "SEND" android/app/src/main/AndroidManifest.xml
 
+      - name: Ikon notifikasi bar atas (siluet pin)
+        run: |
+          mkdir -p android/app/src/main/res/drawable
+          cat > android/app/src/main/res/drawable/ic_stat_jomapz.xml <<'XML'
+          <vector xmlns:android="http://schemas.android.com/apk/res/android" android:width="24dp" android:height="24dp" android:viewportWidth="24" android:viewportHeight="24">
+            <path android:fillColor="#FFFFFFFF" android:fillType="evenOdd" android:pathData="M12,1.5C7.86,1.5 4.5,4.86 4.5,9c0,5.6 7.5,13.5 7.5,13.5s7.5,-7.9 7.5,-13.5C19.5,4.86 16.14,1.5 12,1.5zM12,12a3,3 0 1,1 0,-6 3,3 0 0,1 0,6z"/>
+          </vector>
+          XML
+          python3 - <<'PY'
+          p='android/app/src/main/res/values/strings.xml'
+          s=open(p).read()
+          s=s.replace('</resources>','    <string name="capacitor_background_geolocation_notification_icon">drawable/ic_stat_jomapz</string>\n</resources>')
+          open(p,'w').write(s)
+          PY
+          grep -n "notification_icon" android/app/src/main/res/values/strings.xml
+
       - name: Kunci TomTom (pilihan, dari GitHub Secret)
         env:
           TT: ${{ secrets.TOMTOM_API_KEY }}

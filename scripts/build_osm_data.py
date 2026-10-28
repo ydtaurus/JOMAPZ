@@ -96,7 +96,7 @@ class H(osmium.SimpleHandler):
         has_lanes = "highway" in t and any(k.startswith("turn:lanes") for k in t)
         hw = HW_CODE.get(t.get("highway", ""), 0)
         spd = speed_of(t.get("maxspeed", ""))
-        want_road = bool(hw) and (hw in MAJOR or spd) and (t.get("name") or t.get("ref") or spd)
+        want_road = bool(hw) and ((hw in MAJOR and (t.get("name") or t.get("ref"))) or (spd and hw <= 6))
         if not hit and not has_lanes and not want_road:
             return
         pts = []
@@ -114,12 +114,15 @@ class H(osmium.SimpleHandler):
             for c in hit:
                 self.add(c, lat, lng, t)
         if want_road:
-            tp = thin(pts)
-            flat = []
+            tp = thin(pts, 35.0)
+            pa = pb = 0
+            parts = []
             for a, b in tp:
-                flat.append(int(round(a * 1e5)))
-                flat.append(int(round(b * 1e5)))
-            self.roads.append([(t.get("name") or "")[:40], (t.get("ref") or "")[:14], spd, hw, flat])
+                ia, ib = int(round(a * 1e5)), int(round(b * 1e5))
+                parts.append(str(ia - pa))
+                parts.append(str(ib - pb))
+                pa, pb = ia, ib
+            self.roads.append([(t.get("name") or "")[:40], (t.get("ref") or "")[:14], spd, hw, " ".join(parts)])
         if has_lanes:
             self.lanes.append({"g": [[r5(a), r5(b)] for a, b in pts],
                                "t": {k: t[k] for k in LANE_KEYS if k in t}})

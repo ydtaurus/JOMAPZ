@@ -346,6 +346,7 @@ body.sat #map .maplibregl-canvas{filter:brightness(var(--dim))!important}
   </div>
 </div>
 
+<script>setTimeout(function(){var s=document.getElementById("splash");if(s)s.style.display="none"},9000)</script>
 <script src="lib/maplibre-gl.js"></script>
 <script>
 (function(){
@@ -654,7 +655,7 @@ function initMap(){
 var pinMarker=null,pinPop=null;
 function clearPin(){if(pinMarker){pinMarker.remove();pinMarker=null}if(pinPop){var p=pinPop;pinPop=null;p.remove()}}
 function reverseName(lat,lng,cb){
-  if(dataState===1&&DATA.roads&&DATA.roads.length){
+  if(ROADSREADY){
     var lr=localRoad(lat,lng);
     if(lr&&lr.w[0]){cb(lr.w[0]);return}
   }
@@ -824,7 +825,7 @@ function tick(kmh){
   if(me&&!roadBusy){
     var moved=haversine(lastRoad.lat,lastRoad.lng,me.lat,me.lng);
     var age=Date.now()-lastRoad.t;
-    var local=dataState===1&&DATA.roads&&DATA.roads.length;
+    var local=ROADSREADY;
     var need=local?(moved>15||age>4000||!lastRoad.t):(kmh>5?(moved>100||age>15000):(!lastRoad.t||moved>40||age>45000));
     if(need){
       lastRoad={lat:me.lat,lng:me.lng,t:Date.now()};
@@ -869,7 +870,7 @@ function setRoadInfo(name,ref,spd,hw){
   $('#roadName').textContent=roadText;
 }
 function lookupRoad(lat,lng){
-  if(dataState===1&&DATA.roads&&DATA.roads.length){
+  if(ROADSREADY){
     var lr=localRoad(lat,lng);
     if(lr){setRoadInfo(lr.w[0],lr.w[1],lr.w[2],lr.w[3]);return}
   }
@@ -959,9 +960,25 @@ function loadOsmData(){
     var vn=$('#verNote');if(vn&&j.v)vn.setAttribute('data-osm',j.v);
   }).catch(function(){dataState=2});
 }
+var ROADSREADY=false;
+function decodeRoad(w){
+  if(typeof w[4]!=='string')return w[4];
+  var p=w[4].split(' '),f=new Array(p.length),a=0,b=0,i;
+  for(i=0;i+1<p.length;i+=2){a+=+p[i];b+=+p[i+1];f[i]=a;f[i+1]=b}
+  w[4]=f;return f;
+}
 function buildRoadGrid(){
-  (DATA.roads||[]).forEach(function(w){
-    var f=w[4],seen={},i,st;
+  var R=DATA.roads||[],ix=0;
+  function chunk(){
+    var end=Math.min(R.length,ix+3000);
+    for(;ix<end;ix++)regRoad(R[ix]);
+    if(ix<R.length)setTimeout(chunk,0);else ROADSREADY=true;
+  }
+  chunk();
+}
+function regRoad(w){
+  (function(){
+    var f=decodeRoad(w),seen={},i,st;
     for(i=0;i+3<f.length;i+=2){
       var a=f[i]/1e5,b=f[i+1]/1e5,c=f[i+2]/1e5,d=f[i+3]/1e5;
       var n=Math.max(1,Math.ceil(Math.max(Math.abs(c-a),Math.abs(d-b))*GC*1.5));
@@ -970,7 +987,7 @@ function buildRoadGrid(){
         if(!seen[k]){seen[k]=1;(ROADGRID[k]||(ROADGRID[k]=[])).push(w)}
       }
     }
-  });
+  })();
 }
 var rdStamp=0;
 function localRoad(lat,lng){
