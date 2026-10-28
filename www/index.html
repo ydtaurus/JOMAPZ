@@ -143,6 +143,14 @@ body.night .cc.inc{background:#4a1f1c;color:#ffd4d0;border-color:#7a2b26}
   </div>
 </div>
 
+<div id="upd" class="ov" hidden>
+  <div class="box">
+    <h3>Kemas kini tersedia</h3>
+    <p class="note" id="updTxt"></p>
+    <div class="row"><button class="btn s" id="btnUpdNo">Nanti</button><button class="btn p" id="btnUpdYes">Kemas kini</button></div>
+  </div>
+</div>
+
 <div id="sheet" hidden>
   <h3 id="sName"></h3>
   <div id="opts"></div>
@@ -183,10 +191,6 @@ body.night .cc.inc{background:#4a1f1c;color:#ffd4d0;border-color:#7a2b26}
 <div id="settings" class="ov" hidden>
   <div class="box">
     <h3>Tetapan JOMAPZ</h3>
-    <label for="keyIn">OpenRouteService API key</label>
-    <input type="text" id="keyIn" placeholder="Tampal key di sini" autocomplete="off" autocapitalize="off" spellcheck="false">
-    <p class="note">Daftar percuma di openrouteservice.org, buat token, salin dan tampal di sini. Key disimpan dalam phone kau sahaja.</p>
-
     <h4>Perjalanan</h4>
     <label for="selVeh">Kenderaan</label>
     <select id="selVeh"><option value="car">Kereta</option><option value="moto">Motosikal</option></select>
@@ -219,6 +223,8 @@ body.night .cc.inc{background:#4a1f1c;color:#ffd4d0;border-color:#7a2b26}
     <h4>Sentiasa aktif</h4>
     <div class="sw"><span>Kekal berjalan di latar belakang (macam Waze)</span><input type="checkbox" id="swAlways"></div>
     <p class="note">JOMAPZ kekal hidup dengan notifikasi tetap sehingga kau tekan butang Matikan (⏻) atau Force close. Supaya phone tak matikan JOMAPZ: buka Tetapan phone, Aplikasi, JOMAPZ, Bateri, pilih Tanpa had (Unrestricted).</p>
+    <p class="note" id="verNote"></p>
+    <div class="row"><button class="btn s" id="btnCheckUpd">Semak kemas kini</button></div>
     <div class="row"><button class="btn d" id="btnShutdown">Matikan JOMAPZ</button></div>
 
     <h4>Suara</h4>
@@ -240,7 +246,6 @@ var LS={
   get:function(k,d){try{var v=localStorage.getItem(k);return v===null?d:JSON.parse(v)}catch(e){return d}},
   set:function(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}
 };
-var KEY=LS.get('orsKey','');
 var VOICE=LS.get('voice',true);
 var DIM=LS.get('dim',true);
 var LANG=LS.get('lang','ms');
@@ -268,6 +273,8 @@ var BG=plug('BackgroundGeolocation');
 var TTS=plug('TextToSpeech');
 var KA=plug('KeepAwake');
 var SH=plug('Share');
+var BR=plug('Browser');
+var GH_REPO='ydtaurus/jomapz',BUILD=0,updInfo=null;
 var APP=plug('App');
 var ALWAYS=LS.get('always',true);
 
@@ -797,28 +804,34 @@ function nearestPlaceName(lat,lng){
 }
 
 /* ---------- carian ---------- */
+function placeLabel(p){
+  var parts=[],seen={};
+  [p.name,p.housenumber&&p.street?p.housenumber+' '+p.street:p.street,p.district||p.suburb||p.locality,p.city,p.state].forEach(function(x){
+    if(x&&!seen[x]){seen[x]=1;parts.push(x)}
+  });
+  return parts.join(', ');
+}
 function doSearch(){
   var text=$('#q').value.trim();
   if(!text)return;
-  if(!KEY){openSettings();toast('Masukkan API key dulu');return}
-  var u='https://api.openrouteservice.org/geocode/search?api_key='+encodeURIComponent(KEY)+'&text='+encodeURIComponent(text)+'&boundary.country=MY&size=6';
-  if(me)u+='&focus.point.lon='+me.lng+'&focus.point.lat='+me.lat;
+  var u='https://photon.komoot.io/api/?q='+encodeURIComponent(text)+'&limit=10&lang=en&bbox=99.5,0.8,119.5,7.5';
+  if(me)u+='&lat='+me.lat+'&lon='+me.lng;
   fetch(u).then(function(r){if(!r.ok)throw new Error('Carian gagal ('+r.status+')');return r.json()})
   .then(function(j){
     var box=$('#results');box.innerHTML='';
-    var fs=j.features||[];
+    var fs=(j.features||[]).filter(function(f){return !f.properties.countrycode||f.properties.countrycode==='MY'}).slice(0,6);
     if(!fs.length){box.innerHTML='<div>Tiada hasil</div>';box.hidden=false;return}
     fs.forEach(function(f){
-      var d=document.createElement('div');d.textContent=f.properties.label;
+      var d=document.createElement('div');d.textContent=placeLabel(f.properties)||text;
       d.onclick=function(){
         box.hidden=true;$('#q').blur();
-        setDestination(f.geometry.coordinates[1],f.geometry.coordinates[0],f.properties.name||f.properties.label);
+        setDestination(f.geometry.coordinates[1],f.geometry.coordinates[0],f.properties.name||placeLabel(f.properties));
       };
       box.appendChild(d);
     });
     box.hidden=false;
   })
-  .catch(function(e){toast(e.message)});
+  .catch(function(e){toast(e.message==='Failed to fetch'?'Tiada sambungan internet':e.message)});
 }
 
 /* ---------- laluan ---------- */
@@ -827,7 +840,6 @@ function curAvoid(){
 }
 function setDestination(lat,lng,name){
   if(!me){toast('Menunggu GPS...');return}
-  if(!KEY){openSettings();toast('Masukkan API key dulu');return}
   destInfo={lat:lat,lng:lng,name:name};
   $('#saveAs').value='';
   toast('Mengira laluan...',9000);
@@ -888,34 +900,75 @@ function getRoutes(from,to){
     return out;
   });
 }
+var VALHALLA='https://valhalla1.openstreetmap.de/route';
+var VTYPE={1:11,2:11,3:11,4:10,5:10,6:10,7:6,8:6,9:5,10:1,11:3,12:9,13:9,14:2,15:0,16:4,17:6,18:5,19:4,20:5,21:4,22:6,23:13,24:12,25:6,26:7,27:8};
+function decodePoly6(str){
+  var i=0,lat=0,lng=0,out=[];
+  while(i<str.length){
+    var s=0,r=0,c;
+    do{c=str.charCodeAt(i++)-63;r|=(c&31)<<s;s+=5}while(c>=32);
+    lat+=(r&1)?~(r>>1):(r>>1);
+    s=0;r=0;
+    do{c=str.charCodeAt(i++)-63;r|=(c&31)<<s;s+=5}while(c>=32);
+    lng+=(r&1)?~(r>>1):(r>>1);
+    out.push([lng/1e6,lat/1e6]);
+  }
+  return out;
+}
+function valhallaBody(coordinates,pref,polys){
+  var a=curAvoid(),moto=VEH==='moto',co={};
+  var o={};
+  if(pref==='shortest')o.shortest=true;
+  if(pref==='recommended'){o.use_highways=0.35;o.use_tolls=0.5}
+  if(a.hwy)o.use_highways=0;
+  if(a.toll)o.use_tolls=0;
+  co[moto?'motorcycle':'auto']=o;
+  var locs=coordinates.map(function(c,i){
+    var l={lat:c[1],lon:c[0]};
+    if(i>0&&i<coordinates.length-1)l.type='through';
+    return l;
+  });
+  var body={locations:locs,costing:moto?'motorcycle':'auto',costing_options:co,directions_options:{units:'kilometers',language:'en-US'}};
+  if(polys&&polys.coordinates&&polys.coordinates.length)body.exclude_polygons=polys.coordinates.map(function(p){return p[0]});
+  return body;
+}
 function fetchRoute(coordinates,pref,polys){
-  var body={coordinates:coordinates,instructions:true,language:'en',units:'m',preference:pref||'fastest',extra_info:['tollways']};
-  var av=[],a=curAvoid();
-  if(a.toll)av.push('tollways');
-  if(a.hwy)av.push('highways');
-  if(av.length)body.options={avoid_features:av};
-  if(polys){body.options=body.options||{};body.options.avoid_polygons=polys}
-  return fetch('https://api.openrouteservice.org/v2/directions/driving-car/geojson',{
-    method:'POST',headers:{'Authorization':KEY,'Content-Type':'application/json'},body:JSON.stringify(body)
-  }).then(function(r){
-    if(!r.ok)return r.text().then(function(t){
-      var msg='Laluan gagal ('+r.status+')';
-      if(r.status===401||r.status===403)msg='API key tak sah atau tiada kebenaran';
-      else if(r.status===429)msg='Had harian API dicapai. Cuba lagi esok';
-      else if(r.status===404||/2010|2004/.test(t))msg='Tiada laluan ditemui ke tempat itu';
-      throw new Error(msg);
+  var body=valhallaBody(coordinates,pref,polys);
+  function go(n){
+    return fetch(VALHALLA,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)}).then(function(r){
+      if(!r.ok)return r.text().then(function(t){
+        if(r.status>=500&&n<2)return new Promise(function(ok){setTimeout(ok,1500)}).then(function(){return go(n+1)});
+        var msg='Laluan gagal ('+r.status+')';
+        if(r.status===429)msg='Pelayan laluan sibuk. Cuba sebentar lagi';
+        else if(r.status===400&&/171|442|443|444/.test(t))msg='Tiada laluan ditemui ke tempat itu';
+        else if(r.status===400&&/\b1\d\d\b/.test(t))msg='Lokasi terlalu jauh dari jalan';
+        throw new Error(msg);
+      });
+      return r.json();
+    },function(){
+      if(n<2)return new Promise(function(ok){setTimeout(ok,1500)}).then(function(){return go(n+1)});
+      throw new Error('Tiada sambungan ke pelayan laluan');
     });
-    return r.json();
-  }).then(function(j){
-    var f=j.features&&j.features[0];
-    if(!f)throw new Error('Tiada laluan ditemui');
-    var coords=f.geometry.coordinates;
-    var steps=(f.properties.segments&&f.properties.segments[0]&&f.properties.segments[0].steps)||[];
-    var cum=[0],i;
+  }
+  return go(0).then(function(j){
+    var trip=j.trip;
+    if(!trip||!trip.legs||!trip.legs.length)throw new Error('Tiada laluan ditemui');
+    var coords=[],steps=[],i,L,k;
+    trip.legs.forEach(function(leg){
+      var pts=decodePoly6(leg.shape),off=coords.length?coords.length-1:0;
+      if(coords.length)pts.shift();
+      coords=coords.concat(pts);
+      (leg.maneuvers||[]).forEach(function(m){
+        var ty=VTYPE[m.type];if(ty===undefined)ty=6;
+        steps.push({type:ty,instruction:m.instruction||'',name:(m.street_names&&m.street_names[0])||'',distance:Math.round((m.length||0)*1000),duration:m.time||0,way_points:[m.begin_shape_index+off,m.end_shape_index+off],toll:!!m.toll});
+      });
+    });
+    // gabung langkah destinasi pertengahan: guna hanya yang terakhir sebagai 'sampai'
+    var cum=[0];
     for(i=1;i<coords.length;i++)cum.push(cum[i-1]+haversine(coords[i-1][1],coords[i-1][0],coords[i][1],coords[i][0]));
-    var hasToll=false;
-    try{var tv=f.properties.extras.tollways.values;for(i=0;i<tv.length;i++){if(tv[i][2]===1)hasToll=true}}catch(e){}
-    return {coords:coords,steps:steps,cum:cum,dist:f.properties.summary.distance,dur:f.properties.summary.duration,last:0,total:cum[cum.length-1]||f.properties.summary.distance,hasToll:hasToll,events:[],labels:[pref||'fastest']};
+    var sm=trip.summary||{},dist=Math.round((sm.length||0)*1000),dur=sm.time||0;
+    var hasToll=!!sm.has_toll;
+    return {coords:coords,steps:steps,cum:cum,dist:dist,dur:dur,last:0,total:cum[cum.length-1]||dist,hasToll:hasToll,events:[],labels:[pref||'fastest']};
   });
 }
 function drawRoute(r){
@@ -1485,12 +1538,11 @@ function tripDetail(i){
 }
 function repeatTrip(t){
   if(!me){toast('Menunggu GPS...');return}
-  if(!KEY){openSettings();toast('Masukkan API key dulu');return}
   var pts=t.pts,bi=0,bd=1e12,i;
   for(i=0;i<pts.length;i++){var d=haversine(me.lat,me.lng,pts[i][0],pts[i][1]);if(d<bd){bd=d;bi=i}}
   var rest=pts.slice(bi);
   if(rest.length<2){toast('Anda sudah hampir di penghujung laluan itu');return}
-  var wp=thin(rest,Math.min(20,rest.length)),coords=[[me.lng,me.lat]];
+  var wp=thin(rest,Math.min(12,rest.length)),coords=[[me.lng,me.lat]];
   wp.forEach(function(p){coords.push([p[1],p[0]])});
   var last=pts[pts.length-1];
   destInfo={lat:last[0],lng:last[1],name:t.to};
@@ -1534,7 +1586,7 @@ document.addEventListener('visibilitychange',function(){
 
 /* ---------- tetapan ---------- */
 function openSettings(){
-  $('#keyIn').value=KEY;$('#swVoice').checked=VOICE;$('#swDim').checked=DIM;$('#selLang').value=LANG;
+  $('#swVoice').checked=VOICE;$('#swDim').checked=DIM;$('#selLang').value=LANG;
   $('#selVeh').value=VEH;$('#selPref').value=PREF;$('#swHwy').checked=HWY;
   $('#selTheme').value=THEME;$('#swAZ').checked=AZ;$('#selZ').value=String(ZOFF);
   $('#swAes').checked=!!SHOW.aes;$('#swRr').checked=!!SHOW.rr;$('#swSig').checked=!!SHOW.sig;$('#swToll').checked=!!SHOW.toll;
@@ -1545,7 +1597,7 @@ function openSettings(){
 }
 function closeSettings(){$('#settings').hidden=true}
 function saveSettings(){
-  KEY=$('#keyIn').value.trim();VOICE=$('#swVoice').checked;DIM=$('#swDim').checked;LANG=$('#selLang').value;
+  VOICE=$('#swVoice').checked;DIM=$('#swDim').checked;LANG=$('#selLang').value;
   VEH=$('#selVeh').value;PREF=$('#selPref').value;HWY=$('#swHwy').checked;
   THEME=$('#selTheme').value;AZ=$('#swAZ').checked;ZOFF=parseFloat($('#selZ').value)||0;
   SHOW={aes:$('#swAes').checked,rr:$('#swRr').checked,sig:$('#swSig').checked,toll:$('#swToll').checked,inc:$('#swInc').checked};
@@ -1553,7 +1605,7 @@ function saveSettings(){
   TTKEY=$('#ttKey').value.trim();LS.set('ttKey',TTKEY);
   var al=$('#swAlways').checked;LS.set('always',al);
   if(al!==ALWAYS){ALWAYS=al;if(!navActive)startWatch(ALWAYS)}
-  LS.set('orsKey',KEY);LS.set('voice',VOICE);LS.set('dim',DIM);LS.set('lang',LANG);
+  LS.set('voice',VOICE);LS.set('dim',DIM);LS.set('lang',LANG);
   LS.set('veh',VEH);LS.set('pref',PREF);LS.set('avoidHwy',HWY);LS.set('theme',THEME);LS.set('az',AZ);LS.set('zoff',ZOFF);LS.set('show',SHOW);LS.set('chipsec',CHIPSEC);
   if(!DIM)document.documentElement.style.setProperty('--dim','1');
   $('#avoidHwy').checked=HWY;
@@ -1577,7 +1629,37 @@ function installVoice(){
 }
 
 /* ---------- mula ---------- */
+
+/* ---------- kemas kini app ---------- */
+function openUrl(u){try{if(BR){BR.open({url:u});return}}catch(e){}window.open(u,'_blank')}
+function checkUpdate(manual){
+  if(!manual){
+    var last=LS.get('updLast',0);
+    if(Date.now()-last<6*3600*1000)return;
+    if(navActive)return;
+  }
+  return fetch('https://api.github.com/repos/'+GH_REPO+'/releases/latest',{headers:{'Accept':'application/vnd.github+json'}})
+  .then(function(r){if(!r.ok)throw new Error('x');return r.json()})
+  .then(function(j){
+    LS.set('updLast',Date.now());
+    var m=/build-(\d+)/.exec(j.tag_name||''),n=m?parseInt(m[1],10):0;
+    var a=(j.assets||[]).filter(function(x){return /\.apk$/i.test(x.name)})[0];
+    if(!n||!a)throw new Error('x');
+    if(n>BUILD&&BUILD>0){
+      updInfo={n:n,url:a.browser_download_url};
+      var skip=LS.get('updSkip',{});
+      if(!manual&&((skip.n===n&&Date.now()-skip.t<24*3600*1000)||navActive))return;
+      $('#updTxt').textContent='Versi baru (build '+n+') sudah sedia. Kau guna build '+BUILD+'. Tekan Kemas kini, muat turun APK, kemudian ketuk fail itu untuk install. Data tersimpan kekal.';
+      $('#upd').hidden=false;
+    }else if(manual)toast('Sudah versi terkini (build '+BUILD+')');
+  }).catch(function(){if(manual)toast('Tidak dapat semak kemas kini sekarang',3500)});
+}
 document.addEventListener('DOMContentLoaded',function(){
+  fetch('version.json').then(function(r){return r.ok?r.json():null}).then(function(j){if(j&&j.build){BUILD=j.build;$('#verNote').textContent='JOMAPZ build '+j.build+' · dibina oleh Pratama Yudha'}else{$('#verNote').textContent='JOMAPZ · dibina oleh Pratama Yudha'}}).catch(function(){});
+  setTimeout(function(){checkUpdate(false)},7000);
+  $('#btnCheckUpd').onclick=function(){checkUpdate(true)};
+  $('#btnUpdNo').onclick=function(){$('#upd').hidden=true;if(updInfo)LS.set('updSkip',{n:updInfo.n,t:Date.now()})};
+  $('#btnUpdYes').onclick=function(){$('#upd').hidden=true;if(updInfo)openUrl(updInfo.url)};
   fetch('tol.json').then(function(r){return r.ok?r.json():null}).then(function(j){if(j&&j.plazas)TOL=j}).catch(function(){});
   applyTheme();
   setInterval(applyTheme,60000);
@@ -1635,13 +1717,12 @@ document.addEventListener('DOMContentLoaded',function(){
   map.on('load',splashReady);
   setTimeout(hideSplash,7000);
   setTimeout(restoreTrip,2500);
-  if(!KEY)setTimeout(function(){toast('Mula dengan masukkan API key di ⚙',4500)},1200);
   if(/[#&]test/.test(location.hash)){
     window.__t={onPos:onPos,setDestination:setDestination,beginTrip:beginTrip,startNav:startNav,endNav:endNav,applyTheme:applyTheme,sunTimes:sunTimes,
       st:function(){return {me:me,heading:heading,route:route,navActive:navActive,zoom:map.getZoom(),bearing:map.getBearing(),chips:chipLive.length,trips:TRIPS.length,night:document.body.classList.contains('night'),next:navNext}},
       map:function(){return map},setTheme:function(v){THEME=v;applyTheme()},setVeh:function(v){VEH=v},
       events:function(){return route&&route.events},warm:function(){return {q:warmQ.length,n:Object.keys(warmed).length}},
-      setKeys:function(k,tt){KEY=k;TTKEY=tt||''},prepareTrip:prepareTrip,matchLane:matchLane,laneSvg:laneSvg,tollPrice:tollPrice,restoreTrip:restoreTrip};
+      setKeys:function(k,tt){TTKEY=tt||''},prepareTrip:prepareTrip,matchLane:matchLane,laneSvg:laneSvg,tollPrice:tollPrice,restoreTrip:restoreTrip};
   }
 });
 })();
