@@ -15,6 +15,26 @@ public class MainActivity extends BridgeActivity {
 
     public class ShareBridge {
         @JavascriptInterface
+        public void quit() {
+            runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+                    try {
+                        finishAndRemoveTask();
+                    } catch (Exception e) {
+                        finish();
+                    }
+                    new android.os.Handler().postDelayed(new Runnable() {
+                        @Override
+                        public void run() {
+                            android.os.Process.killProcess(android.os.Process.myPid());
+                        }
+                    }, 500);
+                }
+            });
+        }
+
+        @JavascriptInterface
         public void resolve(final String text, final String id) {
             new Thread(new Runnable() {
                 @Override
