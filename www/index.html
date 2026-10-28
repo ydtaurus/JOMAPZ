@@ -267,7 +267,18 @@ var TTKEY=LS.get('ttKey','');
 var MYCAMS=LS.get('myCams',[]);
 var PLACES=LS.get('places',{home:null,work:null,fav:[]});
 var TRIPS=LS.get('trips',[]);
-var OVERPASS='https://overpass-api.de/api/interpreter';
+var OV_MIRRORS=['https://overpass-api.de/api/interpreter','https://overpass.private.coffee/api/interpreter','https://overpass.kumi.systems/api/interpreter'],ovI=0;
+function ovFetch(q,tmo,maxTry){
+  var tries=maxTry||OV_MIRRORS.length,n=0;
+  function go(){
+    var url=OV_MIRRORS[ovI%OV_MIRRORS.length],ctl=('AbortController' in window)?new AbortController():null;
+    var to=setTimeout(function(){if(ctl)ctl.abort()},tmo||25000);
+    return fetch(url,{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:'data='+encodeURIComponent(q),signal:ctl?ctl.signal:undefined})
+    .then(function(r){clearTimeout(to);if(!r.ok)throw new Error('ov '+r.status);return r.json()})
+    .catch(function(e){clearTimeout(to);ovI++;n++;if(n<tries)return go();throw e});
+  }
+  return go();
+}
 var TOL={plazas:[]};
 
 /* ---------- plugin native ---------- */
@@ -642,9 +653,9 @@ function lookupRoad(lat,lng){
   var ctl=('AbortController' in window)?new AbortController():null;
   var to=setTimeout(function(){if(ctl)ctl.abort()},10000);
   var q='[out:json][timeout:9];way(around:40,'+lat+','+lng+')[highway][highway!~"^(footway|path|cycleway|steps|pedestrian|track|bridleway|corridor|proposed|construction|platform)$"];out geom 25;';
-  fetch(OVERPASS,{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:'data='+encodeURIComponent(q),signal:ctl?ctl.signal:undefined})
-  .then(function(r){if(!r.ok)throw new Error('x');return r.json()})
+  ovFetch(q,8000,2)
   .then(function(j){
+    clearTimeout(to);
     var els=j.elements||[],best=null,bd=1e9;
     els.forEach(function(w){var d=wayDist(w,lat,lng);if(d<bd){bd=d;best=w}});
     var L=$('#lim');
@@ -721,15 +732,19 @@ function loadPOI(){
   var parts=act.map(function(L){return 'nwr'+L.q+'('+bbox+');'}).join('');
   var q='[out:json][timeout:20];('+parts+');out center 250;';
   if(poiCache[q]&&Date.now()-poiCache[q].t<600000){renderPOI(poiCache[q].els,act);return}
-  fetch(OVERPASS,{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:'data='+encodeURIComponent(q)})
-  .then(function(r){if(!r.ok)throw new Error('Overpass '+r.status);return r.json()})
+  ovFetch(q,25000)
   .then(function(j){
     poiCache[q]={t:Date.now(),els:j.elements||[]};
     renderPOI(j.elements||[],act);
     if((j.elements||[]).length>=250)toast('Terlalu banyak tempat, zum masuk untuk lihat lebih');
   })
-  .catch(function(){toast('Tak dapat muat tempat. Semak internet')});
+  .catch(function(){
+    if(navigator.onLine===false){toast('Tiada internet');return}
+    toast('Pelayan tempat sibuk. Cuba lagi automatik...',3500);
+    clearTimeout(poiRetry);poiRetry=setTimeout(loadPOI,8000);
+  });
 }
+var poiRetry=null;
 function renderPOI(els,act){
   clearPOI();
   els.forEach(function(el){
@@ -1004,8 +1019,7 @@ function projectPt(R,lat,lng,a,b){
   return best;
 }
 function overpassPost(q){
-  return fetch(OVERPASS,{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:'data='+encodeURIComponent(q)})
-  .then(function(r){if(!r.ok)throw new Error('ov '+r.status);return r.json()});
+  return ovFetch(q,30000);
 }
 function withRetry(fn){return fn().catch(function(){return new Promise(function(res){setTimeout(res,2000)}).then(fn)})}
 function prepareTrip(R){
