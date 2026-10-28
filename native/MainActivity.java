@@ -49,6 +49,14 @@ public class MainActivity extends BridgeActivity {
         } catch (Exception e) {
         }
         handleShare(getIntent());
+        try {
+            if (android.os.Build.VERSION.SDK_INT >= 33
+                    && checkSelfPermission("android.permission.POST_NOTIFICATIONS")
+                    != android.content.pm.PackageManager.PERMISSION_GRANTED) {
+                requestPermissions(new String[]{"android.permission.POST_NOTIFICATIONS"}, 4242);
+            }
+        } catch (Exception e) {
+        }
     }
 
     @Override

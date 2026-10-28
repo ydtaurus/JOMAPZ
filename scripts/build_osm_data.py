@@ -27,11 +27,41 @@ def r5(x):
     return round(x, 5)
 
 
+HW_CODE = {"motorway": 1, "motorway_link": 1, "trunk": 2, "trunk_link": 2, "primary": 3, "primary_link": 3,
+           "secondary": 4, "secondary_link": 4, "tertiary": 5, "tertiary_link": 5, "unclassified": 6,
+           "residential": 7, "living_street": 7, "service": 8}
+MAJOR = {1, 2, 3, 4, 5}
+
+
+def speed_of(v):
+    try:
+        n = int(str(v).split()[0])
+        if "mph" in str(v):
+            n = round(n * 1.609)
+        return n if 5 <= n <= 130 else 0
+    except Exception:
+        return 0
+
+
+def thin(pts, step=22.0):
+    """Kurangkan titik: simpan titik yang jaraknya >= step meter, sentiasa simpan awal dan akhir."""
+    out = [pts[0]]
+    for p in pts[1:-1]:
+        dx = (p[1] - out[-1][1]) * 111320 * 0.99
+        dy = (p[0] - out[-1][0]) * 110540
+        if dx * dx + dy * dy >= step * step:
+            out.append(p)
+    if len(pts) > 1:
+        out.append(pts[-1])
+    return out
+
+
 class H(osmium.SimpleHandler):
     def __init__(self):
         super().__init__()
         self.cats = {k: [] for k in INFRA}
         self.lanes = []
+        self.roads = []
         self.seen = {k: set() for k in INFRA}
 
     def add(self, cat, lat, lng, t):
@@ -64,7 +94,10 @@ class H(osmium.SimpleHandler):
         t = {tg.k: tg.v for tg in w.tags}
         hit = [c for c, fn in INFRA.items() if c not in ("sig",) and fn(t)]
         has_lanes = "highway" in t and any(k.startswith("turn:lanes") for k in t)
-        if not hit and not has_lanes:
+        hw = HW_CODE.get(t.get("highway", ""), 0)
+        spd = speed_of(t.get("maxspeed", ""))
+        want_road = bool(hw) and (hw in MAJOR or spd) and (t.get("name") or t.get("ref") or spd)
+        if not hit and not has_lanes and not want_road:
             return
         pts = []
         try:
@@ -80,6 +113,13 @@ class H(osmium.SimpleHandler):
             lng = sum(p[1] for p in pts) / len(pts)
             for c in hit:
                 self.add(c, lat, lng, t)
+        if want_road:
+            tp = thin(pts)
+            flat = []
+            for a, b in tp:
+                flat.append(int(round(a * 1e5)))
+                flat.append(int(round(b * 1e5)))
+            self.roads.append([(t.get("name") or "")[:40], (t.get("ref") or "")[:14], spd, hw, flat])
         if has_lanes:
             self.lanes.append({"g": [[r5(a), r5(b)] for a, b in pts],
                                "t": {k: t[k] for k in LANE_KEYS if k in t}})
@@ -89,12 +129,13 @@ def main():
     src, dst = sys.argv[1], sys.argv[2]
     h = H()
     h.apply_file(src, locations=True, idx="flex_mem")
-    out = {"v": datetime.date.today().isoformat(), "cats": h.cats, "lanes": h.lanes}
+    out = {"v": datetime.date.today().isoformat(), "cats": h.cats, "lanes": h.lanes, "roads": h.roads}
     with open(dst, "w", encoding="utf-8") as f:
         json.dump(out, f, ensure_ascii=False, separators=(",", ":"))
     for k, v in h.cats.items():
         print(k, len(v))
     print("lane ways", len(h.lanes))
+    print("road ways", len(h.roads))
 
 
 main()

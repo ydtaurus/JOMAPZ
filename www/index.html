@@ -111,6 +111,81 @@ body.night .cc.inc{background:#4a1f1c;color:#ffd4d0;border-color:#7a2b26}
 .maplibregl-popup-content{padding:12px 14px;border-radius:12px;font-size:14px;min-width:170px;color:#15171a}
 .maplibregl-popup-content b{display:block;margin-bottom:2px}
 .maplibregl-popup-content button{margin-top:8px;width:100%;background:var(--pri);color:#fff;border-radius:8px;padding:9px;font-weight:600}
+
+/* ===== kemasan UI v2 ===== */
+:root{--r:16px;--sh:0 4px 16px rgba(0,0,0,.22)}
+body{font-family:Roboto,system-ui,-apple-system,"Segoe UI",sans-serif;-webkit-font-smoothing:antialiased}
+#searchRow{border-radius:var(--r);box-shadow:var(--sh);align-items:center}
+#q{font-size:16px;font-weight:500}
+#btnVeh,#btnPaste,#goSearch{width:46px;height:46px;font-size:20px;flex:none}
+#btnVeh{font-size:22px;border-right:1px solid var(--line)}
+.chip{box-shadow:0 2px 8px rgba(0,0,0,.2);font-weight:600;font-size:14px;padding:9px 14px}
+.fab{width:50px;height:50px;box-shadow:var(--sh)}
+#spdCard,#road{border-radius:var(--r);box-shadow:var(--sh)}
+#spd{font-size:32px;font-weight:800;letter-spacing:-.5px}
+#lim{box-shadow:var(--sh)}
+#lim.blink{animation:limBlink .7s ease-in-out infinite alternate}
+@keyframes limBlink{from{transform:scale(1)}to{transform:scale(1.14);box-shadow:0 0 0 6px rgba(217,48,37,.35)}}
+#banner{border-radius:20px;background:linear-gradient(135deg,#0b3d2e,#15703f);box-shadow:var(--sh)}
+#bDist{font-weight:800;letter-spacing:-.5px}
+#sheet,#navbar{border-radius:24px 24px 0 0;box-shadow:0 -4px 20px rgba(0,0,0,.28)}
+.opt{border-radius:14px}
+.btn{border-radius:14px;min-height:48px}
+.seg{display:flex;gap:8px;margin:2px 0 8px}
+.seg button{flex:1;padding:10px;border-radius:12px;background:var(--btn);font-weight:600;font-size:14px;border:2px solid transparent}
+.seg button.on{background:var(--on);border-color:#7db81c;color:var(--onfg)}
+.wx{font-size:14px;line-height:1.5;white-space:pre-line;background:var(--btn);border-radius:12px;padding:8px 12px;margin:0 0 8px}
+.wx.rain{background:#e8f0fe;color:#174ea6}
+body.night .wx.rain{background:#1a2a4a;color:#bcd3ff}
+.icons{display:flex;flex-wrap:wrap;gap:8px}
+.icons .ic{width:46px;height:46px;border-radius:12px;background:var(--btn);font-size:24px;border:2px solid transparent}
+.icons .ic.on{border-color:#7db81c;background:var(--on)}
+.mt{display:flex;align-items:center;gap:14px;width:100%;text-align:left;padding:12px;margin-top:8px;border:2px solid var(--line);border-radius:14px}
+.mt.on{border-color:#7db81c;background:var(--on)}
+.mt .me{font-size:30px;width:40px;text-align:center}
+.mt b{display:block;font-size:16px}.mt small{color:var(--mut);font-size:13px}
+#results .hd{font-size:12px;color:var(--mut);font-weight:700;text-transform:uppercase;letter-spacing:.5px;padding:10px 14px 4px;border-bottom:0}
+#results .rc{display:flex;align-items:center;gap:10px}
+#results .rc .rt{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#results .rx{width:34px;height:34px;font-size:20px;color:var(--mut)}
+.pinpop .maplibregl-popup-content{padding:12px 14px;border-radius:16px;box-shadow:var(--sh)}
+.pinpop .pn{font-size:15px;margin-bottom:0}
+.pinpop small{display:block;color:#667085;font-size:12px;margin-bottom:6px}
+.pinpop .pr2{display:flex;gap:6px}
+.pinpop .pr2 button{margin-top:0}
+.pinpop button.alt{background:#eef0f3;color:#15171a}
+.pinpop button.red{background:#d93025}
+body.sat #map .maplibregl-canvas{filter:brightness(var(--dim))!important}
+.maplibregl-popup-content b{color:#15171a}
+@media (orientation:landscape) and (max-height:540px){
+  :root{--r:14px}
+  #top{right:auto;width:min(46%,400px);left:calc(10px + env(safe-area-inset-left,0px))}
+  #btnVeh,#btnPaste,#goSearch{height:40px;width:40px}
+  #q{padding:9px 12px}
+  #results{max-height:50vh}
+  .scroll{margin-top:6px}
+  .fabs{gap:7px;right:calc(8px + env(safe-area-inset-right,0px));bottom:8px;max-height:calc(100% - 16px);flex-wrap:wrap-reverse;justify-content:flex-start;align-content:flex-end}
+  .fab{width:42px;height:42px;font-size:19px}
+  #btnNorth svg{width:22px;height:22px}
+  #banner{right:auto;width:min(46%,420px);padding:7px 12px;gap:10px;border-radius:16px;left:calc(10px + env(safe-area-inset-left,0px))}
+  #bArrow{font-size:32px;width:40px}#bDist{font-size:22px}#bText{font-size:14px}
+  #cn{left:calc(10px + env(safe-area-inset-left,0px));top:calc(var(--top) + 84px);max-width:42%}
+  #lanes{left:calc(10px + env(safe-area-inset-left,0px));transform:none;top:auto;bottom:70px;padding:4px 6px}
+  #lanes svg{width:28px;height:38px}
+  body.lanes #cn{top:calc(var(--top) + 84px)}
+  #speedBox{left:calc(10px + env(safe-area-inset-left,0px));bottom:8px}
+  #spd{font-size:26px}
+  #lim{width:44px;height:44px;border-width:5px;font-size:16px}
+  #road{left:calc(96px + env(safe-area-inset-left,0px));right:auto;width:min(40%,330px);bottom:8px;padding:6px 10px}
+  body.nav #road{display:none}
+  #sheet{left:auto;right:0;top:0;bottom:0;width:min(48%,440px);border-radius:24px 0 0 24px;overflow:auto;padding:12px 16px calc(var(--bot) + 12px)}
+  #navbar{left:auto;right:calc(62px + env(safe-area-inset-right,0px));bottom:0;width:min(46%,420px);border-radius:18px 18px 0 0;padding:8px 14px calc(var(--bot) + 8px)}
+  #navbar .eta{font-size:18px}
+  #navbar .btn{padding:8px 14px;min-height:40px}
+  .ov .box{max-width:560px;margin:0 auto;max-height:100%;border-radius:20px 20px 0 0}
+  #toast{top:calc(var(--top) + 10px)}
+  body.nav #top{display:none}
+}
 </style>
 </head>
 <body>
@@ -118,7 +193,7 @@ body.night .cc.inc{background:#4a1f1c;color:#ffd4d0;border-color:#7a2b26}
 <div id="map"></div>
 
 <div id="top">
-  <div id="searchRow"><input id="q" type="search" placeholder="Cari tempat..." enterkeyhint="search" autocomplete="off"><button id="btnPaste" aria-label="Tampal">📋</button><button id="goSearch" aria-label="Cari">🔍</button></div>
+  <div id="searchRow"><input id="q" type="search" placeholder="Cari tempat..." enterkeyhint="search" autocomplete="off"><button id="btnVeh" aria-label="Kenderaan">🚗</button><button id="btnPaste" aria-label="Tampal">📋</button><button id="goSearch" aria-label="Cari">🔍</button></div>
   <div id="results" hidden></div>
   <div id="places" class="scroll"></div>
   <div id="chips" class="scroll"></div>
@@ -135,10 +210,33 @@ body.night .cc.inc{background:#4a1f1c;color:#ffd4d0;border-color:#7a2b26}
 <div class="fabs">
   <button class="fab" id="btnNorth" aria-label="Kompas" hidden><svg viewBox="0 0 28 28"><path d="M14 3L20 15H8Z" fill="#d93025"/><path d="M14 25L8 15H20Z" fill="#8a94a0"/></svg></button>
   <button class="fab" id="btnCam" aria-label="Tandakan kamera laju di sini" hidden>📷</button>
+  <button class="fab" id="btnLayers" aria-label="Jenis peta">🗺</button>
   <button class="fab" id="btnTrips" aria-label="Rekod perjalanan">🕘</button>
   <button class="fab" id="btnLoc" aria-label="Lokasi saya">◎</button>
   <button class="fab" id="btnSet" aria-label="Tetapan">⚙</button>
   <button class="fab" id="btnPower" aria-label="Matikan JOMAPZ"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 3v8"/><path d="M6.4 6.6a8 8 0 1 0 11.2 0"/></svg></button>
+</div>
+
+<div id="placeDlg" class="ov" hidden>
+  <div class="box">
+    <h3 id="pdTitle">Simpan tempat</h3>
+    <label for="pdName">Nama</label>
+    <input type="text" id="pdName" placeholder="Contoh: Rumah mak" autocomplete="off">
+    <label>Ikon</label>
+    <div id="pdIcons" class="icons"></div>
+    <label>Lokasi</label>
+    <div class="note" id="pdLoc"></div>
+    <div class="row"><button class="btn s" id="pdUseMe">📍 Guna lokasi saya sekarang</button></div>
+    <div class="row"><button class="btn d" id="pdDel" hidden>Padam</button><button class="btn s" id="pdCancel">Batal</button><button class="btn p" id="pdSave">Simpan</button></div>
+  </div>
+</div>
+
+<div id="mapType" class="ov" hidden>
+  <div class="box">
+    <h3>Jenis peta</h3>
+    <div id="mtList"></div>
+    <div class="row"><button class="btn s" id="btnMtClose">Tutup</button></div>
+  </div>
 </div>
 
 <div id="resume" class="ov" hidden>
@@ -159,11 +257,13 @@ body.night .cc.inc{background:#4a1f1c;color:#ffd4d0;border-color:#7a2b26}
 
 <div id="sheet" hidden>
   <h3 id="sName"></h3>
+  <div id="vehSeg" class="seg"><button data-v="car">🚗 Kereta</button><button data-v="moto">🏍 Motosikal</button></div>
+  <div id="wx" class="wx" hidden></div>
   <div id="opts"></div>
   <p class="note" id="vehNote" hidden>Mod motosikal: enjin laluan tak tahu jalan yang melarang motosikal. Semak papan tanda dan guna "Elak lebuh raya" jika perlu.</p>
   <label class="sw" id="rowToll" style="padding:6px 0 0"><span>Elak tol</span><input type="checkbox" id="avoidToll"></label>
   <label class="sw" id="rowHwy" style="padding:6px 0 0" hidden><span>Elak lebuh raya</span><input type="checkbox" id="avoidHwy"></label>
-  <select id="saveAs"><option value="">Simpan tempat ini sebagai...</option><option value="home">Rumah</option><option value="work">Kerja</option><option value="fav">Kegemaran</option></select>
+  <button class="btn s" id="btnSavePlace" style="width:100%;margin-top:8px">⭐ Simpan tempat ini</button>
   <div class="row"><button class="btn s" id="btnCancel">Batal</button><button class="btn p" id="btnStart">Mula</button></div>
 </div>
 
@@ -198,7 +298,7 @@ body.night .cc.inc{background:#4a1f1c;color:#ffd4d0;border-color:#7a2b26}
   <div class="box">
     <h3>Tetapan JOMAPZ</h3>
     <label for="selLang">Bahasa / Language</label>
-    <select id="selLang"><option value="ms">Bahasa Melayu</option><option value="en">English</option></select>
+    <select id="selLang"><option value="en">English</option><option value="ms">Bahasa Melayu</option></select>
     <p class="note">Bahasa paparan dan suara arahan. App dimuat semula bila bahasa ditukar.</p>
     <h4>Perjalanan</h4>
     <label for="selVeh">Kenderaan</label>
@@ -257,7 +357,8 @@ var LS={
 };
 var VOICE=LS.get('voice',true);
 var DIM=LS.get('dim',true);
-var LANG=LS.get('lang','ms');
+var LANG=LS.get('lang2','en'),LANG0=LANG;
+function L(m,e){return LANG==='en'?e:m}
 var ACTIVE=LS.get('layers',['fuel','toll']);
 var VEH=LS.get('veh','car');
 var PREF=LS.get('pref','fastest');
@@ -267,9 +368,19 @@ var AZ=LS.get('az',true);
 var ZOFF=LS.get('zoff',0);
 var CHIPSEC=LS.get('chipsec',5);
 var SHOW=Object.assign({aes:true,rr:true,sig:true,toll:true,inc:true},LS.get('show',{}));
-var TTKEY=LS.get('ttKey','');
+var TTKEY=LS.get('ttKey',''),TTBUILT=false;
 var MYCAMS=LS.get('myCams',[]);
-var PLACES=LS.get('places',{home:null,work:null,fav:[]});
+var PL=LS.get('places2',null);
+if(!PL){
+  PL=[];
+  var _o=LS.get('places',{home:null,work:null,fav:[]});
+  if(_o.home)PL.push({id:'home',k:'home',n:'Rumah',i:'🏠',lat:_o.home.lat,lng:_o.home.lng});
+  if(_o.work)PL.push({id:'work',k:'work',n:'Kerja',i:'💼',lat:_o.work.lat,lng:_o.work.lng});
+  (_o.fav||[]).forEach(function(f,i){PL.push({id:'f'+i,n:f.n,i:'⭐',lat:f.lat,lng:f.lng})});
+  LS.set('places2',PL);
+}
+var RECENT=LS.get('recent',[]);
+var MAPT=LS.get('mapt','vec');
 var TRIPS=LS.get('trips',[]);
 var OV_MIRRORS=['https://overpass-api.de/api/interpreter','https://overpass.private.coffee/api/interpreter','https://overpass.kumi.systems/api/interpreter'],ovI=0;
 var lastOvErr='';
@@ -344,14 +455,14 @@ var TXT={
     onto:' ke ',exit:', ambil simpang ke-',
     inD:function(d,t){return 'Dalam '+d+', '+t},
     dist:function(m){return m>=1000?(Math.round(m/100)/10).toString().replace('.',',')+' kilometer':(Math.max(50,Math.round(m/50)*50))+' meter'},
-    start:'Mulakan perjalanan',arrive:'Anda sampai di destinasi',reroute:'Mengira semula laluan',cam:'Kamera laju di depan',test:'Ini suara arahan JOMAPZ. Dalam dua ratus meter, belok kiri ke Jalan Puchong.',tts:'ms-MY'
+    start:'Mulakan perjalanan',arrive:'Anda sampai di destinasi',reroute:'Mengira semula laluan',over:'Perlahan sedikit, melebihi had laju',cam:'Kamera laju di depan',test:'Ini suara arahan JOMAPZ. Dalam dua ratus meter, belok kiri ke Jalan Puchong.',tts:'ms-MY'
   },
   en:{
     types:{0:'Turn left',1:'Turn right',2:'Turn sharp left',3:'Turn sharp right',4:'Bear left',5:'Bear right',6:'Continue straight',7:'Enter the roundabout',8:'Exit the roundabout',9:'Make a U-turn',10:'You have arrived',11:'Start driving',12:'Keep left',13:'Keep right'},
     onto:' onto ',exit:', take exit ',
     inD:function(d,t){return 'In '+d+', '+t},
     dist:function(m){return m>=1000?(Math.round(m/100)/10)+' kilometers':(Math.max(50,Math.round(m/50)*50))+' meters'},
-    start:'Starting navigation',arrive:'You have arrived',reroute:'Recalculating',cam:'Speed camera ahead',test:'This is the JOMAPZ voice. In two hundred meters, turn left onto Jalan Puchong.',tts:'en-US'
+    start:'Starting navigation',arrive:'You have arrived',reroute:'Recalculating',over:'Slow down, you are over the speed limit',cam:'Speed camera ahead',test:'This is the JOMAPZ voice. In two hundred meters, turn left onto Jalan Puchong.',tts:'en-US'
   }
 };
 function tx(){return TXT[LANG]||TXT.ms}
@@ -364,6 +475,8 @@ function stepText(s){
 }
 
 var map,meMarker,destMarker,accEl;
+var disp=null,tgt=null,camT={b:null,z:null},touching=false,lastFrame=0,camHold=0,mRot=0;
+function ease(o){camHold=Date.now()+(o.duration||500)+80;map.easeTo(o)}
 var me=null;
 var heading=null;
 var follow=true;
@@ -462,22 +575,59 @@ function makeMarker(){
   el.innerHTML='<div id="acc"></div><svg viewBox="0 0 34 34"><path d="M17 3L29 30L17 24L5 30Z" fill="#a6e22e" stroke="#fff" stroke-width="5.5" stroke-linejoin="round"/><path d="M17 3L29 30L17 24L5 30Z" fill="#a6e22e" stroke="#0f1a05" stroke-width="2.4" stroke-linejoin="round"/></svg>';
   return el;
 }
+function rs(tiles,max,att){return {version:8,sources:{r:{type:'raster',tiles:tiles,tileSize:256,maxzoom:max,attribution:att}},layers:[{id:'r',type:'raster',source:'r'}]}}
+var MSTY={
+  vec:'https://tiles.openfreemap.org/styles/liberty',
+  osm:rs(['https://tile.openstreetmap.org/{z}/{x}/{y}.png'],19,'© OpenStreetMap'),
+  ter:rs(['https://a.tile.opentopomap.org/{z}/{x}/{y}.png','https://b.tile.opentopomap.org/{z}/{x}/{y}.png','https://c.tile.opentopomap.org/{z}/{x}/{y}.png'],17,'© OpenTopoMap'),
+  sat:rs(['https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}'],19,'Esri')
+};
+var MTYPES=[['vec','🗺','Lalai','Peta vektor tajam dan jelas, ala Waze'],['osm','🧭','Standard OSM','Peta OpenStreetMap biasa'],['ter','⛰','Rupa bumi','Kontur dan bukit (terrain)'],['sat','🛰','Satelit','Imej satelit']];
+var RTD={type:'FeatureCollection',features:[]},ALTD={type:'FeatureCollection',features:[]},styleOK=false;
+function setupLayers(){
+  styleOK=true;
+  if(map.getSource('route'))return;
+  map.addSource('route',{type:'geojson',data:RTD});
+  map.addSource('alts',{type:'geojson',data:ALTD});
+  map.addLayer({id:'alt-line',type:'line',source:'alts',layout:{'line-cap':'round','line-join':'round'},paint:{'line-color':'#8a94a0','line-width':6,'line-opacity':.85}});
+  map.addLayer({id:'route-casing',type:'line',source:'route',layout:{'line-cap':'round','line-join':'round'},paint:{'line-color':'#ffffff','line-width':12}});
+  map.addLayer({id:'route-line',type:'line',source:'route',layout:{'line-cap':'round','line-join':'round'},paint:{'line-color':'#1a73e8','line-width':7.5}});
+  schedulePOI();
+}
+function setBase(k,temp){
+  if(!MSTY[k])return;
+  if(!temp){MAPT=k;LS.set('mapt',k)}
+  document.body.classList.toggle('sat',k==='sat');
+  styleOK=false;
+  map.setStyle(MSTY[k]);
+}
+function buildMapType(){
+  var box=$('#mtList');box.innerHTML='';
+  MTYPES.forEach(function(m){
+    var b=document.createElement('button');b.className='mt'+(m[0]===MAPT?' on':'');
+    b.innerHTML='<span class="me">'+m[1]+'</span><span><b>'+m[2]+'</b><small>'+m[3]+'</small></span>';
+    b.onclick=function(){setBase(m[0]);$('#mapType').hidden=true};
+    box.appendChild(b);
+  });
+}
 function initMap(){
+  document.body.classList.toggle('sat',MAPT==='sat');
   map=new maplibregl.Map({
     container:'map',
-    style:{version:8,sources:{osm:{type:'raster',tiles:['https://tile.openstreetmap.org/{z}/{x}/{y}.png'],tileSize:256,maxzoom:19,attribution:'© OpenStreetMap'}},layers:[{id:'osm',type:'raster',source:'osm'}]},
-    center:[101.6869,3.139],zoom:11,attributionControl:false
+    style:MSTY[MAPT]||MSTY.osm,
+    center:[101.6869,3.139],zoom:11,attributionControl:false,fadeDuration:150
   });
   var el=makeMarker();accEl=el.querySelector('#acc');
   meMarker=new maplibregl.Marker({element:el,rotationAlignment:'map',pitchAlignment:'map'}).setLngLat([101.6869,3.139]);
-  map.on('load',function(){
-    map.addSource('route',{type:'geojson',data:{type:'FeatureCollection',features:[]}});
-    map.addSource('alts',{type:'geojson',data:{type:'FeatureCollection',features:[]}});
-    map.addLayer({id:'alt-line',type:'line',source:'alts',layout:{'line-cap':'round','line-join':'round'},paint:{'line-color':'#8a94a0','line-width':5,'line-opacity':.85}});
-    map.addLayer({id:'route-casing',type:'line',source:'route',layout:{'line-cap':'round','line-join':'round'},paint:{'line-color':'#ffffff','line-width':10}});
-    map.addLayer({id:'route-line',type:'line',source:'route',layout:{'line-cap':'round','line-join':'round'},paint:{'line-color':'#1a73e8','line-width':6}});
-    schedulePOI();
-  });
+  map.on('style.load',setupLayers);
+  map.on('error',function(){if(!styleOK&&MAPT!=='osm'&&!map._fb){map._fb=1;toast('Peta vektor tak dapat dimuat. Guna peta standard.',3500);setBase('osm',true)}});
+  setTimeout(function(){if(!styleOK&&!map._fb&&MAPT==='vec'){map._fb=1;setBase('osm',true)}},9000);
+  map.on('touchstart',function(){touching=true});
+  map.on('touchend',function(){touching=false});
+  map.on('touchcancel',function(){touching=false});
+  map.on('mousedown',function(){touching=true});
+  map.on('mouseup',function(){touching=false});
+  requestAnimationFrame(animLoop);
   map.on('dragstart',function(){
     setFollow(false);
     clearTimeout(refollowT);
@@ -487,27 +637,48 @@ function initMap(){
   map.on('moveend',schedulePOI);
   map.on('rotate',updateCompass);
   map.on('zoom',updateRing);
-  var lpTimer=null;
+  var lpTimer=null,lpStart=null;
   function cancelLP(){clearTimeout(lpTimer)}
   map.on('touchstart',function(e){
     cancelLP();
     if(e.points&&e.points.length>1)return;
-    lpTimer=setTimeout(function(){
-      if(navActive)return;
-      mapMenu(e.lngLat);
-    },700);
+    lpStart=e.point;
+    lpTimer=setTimeout(function(){mapMenu(e.lngLat)},650);
   });
   map.on('touchend',cancelLP);
-  map.on('touchmove',cancelLP);
+  map.on('touchmove',function(e){if(lpStart&&e.point&&Math.hypot(e.point.x-lpStart.x,e.point.y-lpStart.y)>16)cancelLP()});
   map.on('dragstart',cancelLP);
   map.on('zoomstart',cancelLP);
-  map.on('contextmenu',function(e){if(!navActive)mapMenu(e.lngLat)});
+  map.on('contextmenu',function(e){mapMenu(e.lngLat)});
+}
+var pinMarker=null,pinPop=null;
+function clearPin(){if(pinMarker){pinMarker.remove();pinMarker=null}if(pinPop){var p=pinPop;pinPop=null;p.remove()}}
+function reverseName(lat,lng,cb){
+  if(dataState===1&&DATA.roads&&DATA.roads.length){
+    var lr=localRoad(lat,lng);
+    if(lr&&lr.w[0]){cb(lr.w[0]);return}
+  }
+  fetch('https://photon.komoot.io/reverse?lat='+lat+'&lon='+lng+'&limit=3&lang=en').then(function(r){if(!r.ok)throw 0;return r.json()}).then(function(j){
+    var f=(j.features||[])[0];var p=f&&f.properties;
+    var n=p&&(p.name||p.street||p.district||p.city);
+    if(n)cb(n+(p.city&&p.city!==n?', '+p.city:''));
+  }).catch(function(){});
 }
 function mapMenu(ll){
-  var pop=new maplibregl.Popup({offset:8,closeButton:true}).setLngLat(ll).setHTML('<b>Lokasi dipilih</b><button data-nav="1">Navigasi ke sini</button><button data-cam="1" style="background:#d93025">Tandakan kamera laju</button>').addTo(map);
+  clearPin();
+  var lat=ll.lat,lng=ll.lng,name=L('Lokasi dipilih','Dropped pin');
+  pinMarker=new maplibregl.Marker({color:'#e8453c'}).setLngLat(ll).addTo(map);
+  var pop=new maplibregl.Popup({offset:[0,-36],closeButton:false,maxWidth:'280px',className:'pinpop'}).setLngLat(ll)
+    .setHTML('<b class="pn">'+name+'</b><small>'+lat.toFixed(5)+', '+lng.toFixed(5)+'</small><div class="pr2"><button data-nav="1">🧭 '+L('Laluan','Route')+'</button><button data-send="1">📤 '+L('Hantar','Send')+'</button></div><button data-save="1" class="alt">⭐ '+L('Simpan tempat','Save place')+'</button><button data-cam="1" class="red">📷 '+L('Kamera laju','Speed camera')+'</button>')
+    .addTo(map);
+  pinPop=pop;
+  pop.on('close',function(){if(pinPop===pop){pinPop=null;clearPin()}});
   var el=pop.getElement();
-  el.querySelector('[data-nav]').onclick=function(){pop.remove();setDestination(ll.lat,ll.lng,'Lokasi dipilih')};
-  el.querySelector('[data-cam]').onclick=function(){pop.remove();markCamera(ll.lat,ll.lng)};
+  reverseName(lat,lng,function(n){name=n;var b=el.querySelector('.pn');if(b)b.textContent=n});
+  el.querySelector('[data-nav]').onclick=function(){clearPin();setDestination(lat,lng,name)};
+  el.querySelector('[data-send]').onclick=function(){shareText(name+' https://maps.google.com/?q='+lat.toFixed(6)+','+lng.toFixed(6),name)};
+  el.querySelector('[data-save]').onclick=function(){clearPin();openPlaceDlg({n:name===L('Lokasi dipilih','Dropped pin')?'':name,lat:lat,lng:lng,i:'⭐'})};
+  el.querySelector('[data-cam]').onclick=function(){clearPin();markCamera(lat,lng)};
 }
 function markCamera(lat,lng){
   MYCAMS.push({lat:lat,lng:lng,t:Date.now()});
@@ -588,12 +759,12 @@ function onPos(p){
   if(hd!==null&&sp>0.9){heading=heading===null?hd:(heading+0.45*angDiff(heading,hd)+360)%360}
   $('#spd').textContent=kmh;
   $('#roadCoord').textContent=me.lat.toFixed(5)+', '+me.lng.toFixed(5)+(me.acc?'  ±'+Math.round(me.acc)+' m':'');
-  meMarker.setLngLat([me.lng,me.lat]);
+  tgt={lat:me.lat,lng:me.lng,at:Date.now(),sp:me.sp};
+  if(first){disp={lat:me.lat,lng:me.lng};meMarker.setLngLat([me.lng,me.lat])}
   if(!meMarker._added){meMarker.addTo(map);meMarker._added=true}
-  if(heading!==null)meMarker.setRotation(heading);
   updateRing();
   if(first){map.jumpTo({center:[me.lng,me.lat],zoom:15});setFollow(true);applyTheme()}
-  else if(follow)camFollow();
+  camFollow();
   tick(kmh);
   if(navActive){recordPt();if(route)updateNav()}
 }
@@ -618,21 +789,34 @@ function targetZoom(){
   return Math.max(13.5,Math.min(18,z));
 }
 function camFollow(){
-  var o={center:[me.lng,me.lat],duration:900,essential:true};
-  if(navActive){
-    if(headingUp&&heading!==null&&me.kmh>=3)o.bearing=heading;
-    o.padding={top:Math.round(window.innerHeight*0.4),bottom:0,left:0,right:0};
-    if(AZ&&Date.now()>azPause){
-      var cz=map.getZoom(),tz=targetZoom();
-      if(Math.abs(tz-cz)>0.08)o.zoom=cz+(tz-cz)*(tz<cz?0.5:0.15);
-    }
+  camT.b=null;camT.z=null;
+  if(!me||!navActive)return;
+  if(headingUp&&heading!==null&&me.kmh>=3)camT.b=heading;
+  if(AZ&&Date.now()>azPause)camT.z=targetZoom();
+}
+function animLoop(ts){
+  requestAnimationFrame(animLoop);
+  if(!map||!tgt||!disp)return;
+  var dt=lastFrame?Math.min(0.1,(ts-lastFrame)/1000):0.016;lastFrame=ts;
+  var age=Math.min(1.5,(Date.now()-tgt.at)/1000),lat=tgt.lat,lng=tgt.lng;
+  if(tgt.sp>1.5&&heading!==null){
+    var dd=tgt.sp*age,br=heading*Math.PI/180;
+    lat+=dd*Math.cos(br)/110540;lng+=dd*Math.sin(br)/(111320*Math.cos(lat*Math.PI/180));
   }
-  map.easeTo(o);
+  if(haversine(disp.lat,disp.lng,lat,lng)>200){disp.lat=lat;disp.lng=lng}
+  else{var k=1-Math.exp(-dt*6);disp.lat+=(lat-disp.lat)*k;disp.lng+=(lng-disp.lng)*k}
+  meMarker.setLngLat([disp.lng,disp.lat]);
+  if(heading!==null){mRot=(mRot+angDiff(mRot,heading)*(1-Math.exp(-dt*8))+360)%360;meMarker.setRotation(mRot)}
+  if(!follow||touching||Date.now()<camHold||!$('#sheet').hidden&&!navActive)return;
+  var c={center:[disp.lng,disp.lat]};
+  if(camT.b!==null){var cb=map.getBearing();c.bearing=cb+angDiff(cb,camT.b)*(1-Math.exp(-dt*2.4))}
+  if(camT.z!==null){var cz=map.getZoom();c.zoom=cz+(camT.z-cz)*(1-Math.exp(-dt*(camT.z<cz?1.6:0.8)))}
+  map.jumpTo(c);
 }
 
 /* ---------- nama jalan + had laju ---------- */
 var EST={motorway:110,trunk:90,primary:80,secondary:60,tertiary:50,unclassified:50,residential:40,living_street:20,service:30};
-var limit={val:null,known:false};
+var limit={val:null,known:false},lastOverSay=0;
 var roadBusy=false;
 var lastRoad={lat:0,lng:0,t:0};
 var roadText='';
@@ -640,7 +824,8 @@ function tick(kmh){
   if(me&&!roadBusy){
     var moved=haversine(lastRoad.lat,lastRoad.lng,me.lat,me.lng);
     var age=Date.now()-lastRoad.t;
-    var need=kmh>5?(moved>100||age>15000):(!lastRoad.t||moved>40||age>45000);
+    var local=dataState===1&&DATA.roads&&DATA.roads.length;
+    var need=local?(moved>15||age>4000||!lastRoad.t):(kmh>5?(moved>100||age>15000):(!lastRoad.t||moved>40||age>45000));
     if(need){
       lastRoad={lat:me.lat,lng:me.lng,t:Date.now()};
       lookupRoad(me.lat,me.lng);
@@ -649,6 +834,8 @@ function tick(kmh){
   var over=limit.known&&limit.val&&kmh>limit.val+3;
   document.documentElement.style.setProperty('--dim',(DIM&&over)?'0.4':'1');
   $('#spdCard').classList.toggle('over',!!over);
+  $('#lim').classList.toggle('blink',!!over);
+  if(over&&kmh>limit.val+5&&Date.now()-lastOverSay>30000){lastOverSay=Date.now();speak(tx().over)}
 }
 function segDist(lat,lng,A,B){
   var kx=Math.cos(lat*Math.PI/180)*111320,ky=110540;
@@ -673,7 +860,19 @@ function stepNameAt(prog){
   }
   return nm;
 }
+function setRoadInfo(name,ref,spd,hw){
+  var L=$('#lim');
+  roadText=name?(name+(ref?' ('+ref+')':'')):(ref?ref:'Jalan tanpa nama');
+  var known=spd>0,val=known?spd:(EST[HWK[hw]]||null);
+  limit={val:val,known:known||hw===1};
+  if(val){L.hidden=false;L.textContent=known?val:'~'+val;L.classList.toggle('est',!known)}else L.hidden=true;
+  $('#roadName').textContent=roadText;
+}
 function lookupRoad(lat,lng){
+  if(dataState===1&&DATA.roads&&DATA.roads.length){
+    var lr=localRoad(lat,lng);
+    if(lr){setRoadInfo(lr.w[0],lr.w[1],lr.w[2],lr.w[3]);return}
+  }
   roadBusy=true;
   var ctl=('AbortController' in window)?new AbortController():null;
   var to=setTimeout(function(){if(ctl)ctl.abort()},10000);
@@ -741,7 +940,7 @@ function shareEta(){
 
 
 /* ---------- data OSM dalam app (tanpa pelayan, tanpa internet) ---------- */
-var DATA=null,dataState=0,GRID={},LANEGRID={},GC=50;
+var DATA=null,dataState=0,GRID={},LANEGRID={},ROADGRID={},GC=50,DATAP=null;
 function cellKey(lat,lng){return Math.floor(lat*GC)+','+Math.floor(lng*GC)}
 function loadOsmData(){
   return fetch('data/osm.json').then(function(r){if(!r.ok)throw new Error('x');return r.json()}).then(function(j){
@@ -754,10 +953,47 @@ function loadOsmData(){
       var seen={};
       w.g.forEach(function(p){var k=cellKey(p[0],p[1]);if(!seen[k]){seen[k]=1;(LANEGRID[k]||(LANEGRID[k]=[])).push(w)}});
     });
+    buildRoadGrid();
     dataState=1;
+    lastRoad.t=0;if(me)tick(me.kmh);
     var vn=$('#verNote');if(vn&&j.v)vn.setAttribute('data-osm',j.v);
   }).catch(function(){dataState=2});
 }
+function buildRoadGrid(){
+  (DATA.roads||[]).forEach(function(w){
+    var f=w[4],seen={},i,st;
+    for(i=0;i+3<f.length;i+=2){
+      var a=f[i]/1e5,b=f[i+1]/1e5,c=f[i+2]/1e5,d=f[i+3]/1e5;
+      var n=Math.max(1,Math.ceil(Math.max(Math.abs(c-a),Math.abs(d-b))*GC*1.5));
+      for(st=0;st<=n;st++){
+        var k=cellKey(a+(c-a)*st/n,b+(d-b)*st/n);
+        if(!seen[k]){seen[k]=1;(ROADGRID[k]||(ROADGRID[k]=[])).push(w)}
+      }
+    }
+  });
+}
+var rdStamp=0;
+function localRoad(lat,lng){
+  var best=null,bd=1e9,kx=Math.cos(lat*Math.PI/180)*111320,ky=110540,ci=Math.floor(lat*GC),cj=Math.floor(lng*GC),a,b,q,i;
+  rdStamp++;
+  for(a=-1;a<=1;a++)for(b=-1;b<=1;b++){
+    var cell=ROADGRID[(ci+a)+','+(cj+b)];if(!cell)continue;
+    for(q=0;q<cell.length;q++){
+      var w=cell[q];if(w._s===rdStamp)continue;w._s=rdStamp;
+      var f=w[4],dm=1e18;
+      for(i=0;i+3<f.length;i+=2){
+        var ax=(f[i+1]/1e5-lng)*kx,ay=(f[i]/1e5-lat)*ky,bx=(f[i+3]/1e5-lng)*kx,by=(f[i+2]/1e5-lat)*ky;
+        var dx=bx-ax,dy=by-ay,L2=dx*dx+dy*dy,t=L2?Math.max(0,Math.min(1,-(ax*dx+ay*dy)/L2)):0;
+        var px=ax+t*dx,py=ay+t*dy,dd=px*px+py*py;if(dd<dm)dm=dd;
+      }
+      var d=Math.sqrt(dm);
+      if(d<bd-6){bd=d;best=w}
+      else if(d<=bd+6&&best&&w[3]<best[3]){if(d<bd)bd=d;best=w}
+    }
+  }
+  return (best&&bd<=35)?{w:best,d:bd}:null;
+}
+var HWK={1:'motorway',2:'trunk',3:'primary',4:'secondary',5:'tertiary',6:'unclassified',7:'residential',8:'service'};
 function dataInBox(cat,s,w,n,e,limit){
   var g=GRID[cat];if(!g)return [];
   var out=[],i0=Math.floor(s*GC),i1=Math.floor(n*GC),j0=Math.floor(w*GC),j1=Math.floor(e*GC),i,j;
@@ -898,47 +1134,103 @@ function renderPOI(els,act){
 }
 
 /* ---------- tempat disimpan ---------- */
-function savePlaces(){LS.set('places',PLACES)}
+function savePlaces(){LS.set('places2',PL)}
+function findK(k){return PL.filter(function(p){return p.k===k})[0]||null}
 function buildPlaces(){
   var box=$('#places');box.innerHTML='';
-  function add(label,emoji,p,key,idx){
+  function add(label,emoji,p,fallback){
     var b=document.createElement('button');b.className='chip';
     b.innerHTML='<span>'+emoji+'</span><span>'+escapeHtml(label)+'</span>';
     var lp=null,longHit=false;
-    b.addEventListener('touchstart',function(){longHit=false;lp=setTimeout(function(){longHit=true;delPlace(key,idx,label)},800)},{passive:true});
+    b.addEventListener('touchstart',function(){longHit=false;lp=setTimeout(function(){longHit=true;if(p)openPlaceDlg(p)},700)},{passive:true});
     b.addEventListener('touchend',function(){clearTimeout(lp)});
     b.addEventListener('touchmove',function(){clearTimeout(lp)});
     b.onclick=function(){
       if(longHit){longHit=false;return}
-      if(!p){toast('Cari tempat dulu, kemudian pilih "Simpan tempat ini sebagai..." di lembaran laluan',4500);return}
-      setDestination(p.lat,p.lng,p.n);
+      if(p){setDestination(p.lat,p.lng,p.n);return}
+      openPlaceDlg(fallback);
     };
     box.appendChild(b);
   }
-  add('Rumah','🏠',PLACES.home,'home');
-  add('Kerja','💼',PLACES.work,'work');
-  (PLACES.fav||[]).forEach(function(f,i){add(f.n,'⭐',f,'fav',i)});
+  var h=findK('home'),w=findK('work');
+  add(h?h.n:'Rumah',h?h.i:'🏠',h,{k:'home',n:'Rumah',i:'🏠'});
+  add(w?w.n:'Kerja',w?w.i:'💼',w,{k:'work',n:'Kerja',i:'💼'});
+  PL.filter(function(p){return !p.k}).forEach(function(p){add(p.n,p.i,p)});
+  add('Tambah','➕',null,{n:'',i:'⭐'});
 }
-function delPlace(key,idx,label){
-  var ok=true;try{ok=window.confirm('Padam '+label+'?')}catch(e){}
-  if(!ok)return;
-  if(key==='fav')PLACES.fav.splice(idx,1);else PLACES[key]=null;
-  savePlaces();buildPlaces();toast('Dipadam');
+var ICONS=['🏠','💼','⭐','❤️','👪','🏫','🎓','🕌','🛒','☕','🍴','⛽','🏥','🏋️','🅿️','✈️'];
+var dlg=null;
+function openPlaceDlg(p){
+  var useMe=(p.lat===undefined||p.lat===null);
+  if(useMe&&!me){toast('Menunggu GPS...');return}
+  dlg={id:p.id||null,k:p.k||null,i:p.i||'⭐',lat:useMe?me.lat:p.lat,lng:useMe?me.lng:p.lng};
+  $('#pdName').value=p.n||(useMe&&roadText&&roadText.indexOf('tidak')<0?roadText:'')||'';
+  $('#pdTitle').textContent=p.id?'Ubah tempat':'Simpan tempat';
+  $('#pdDel').hidden=!p.id;
+  renderPlaceDlg();
+  $('#placeDlg').hidden=false;
 }
-function savePlaceAs(kind){
-  if(!destInfo||!kind)return;
-  var p={n:destInfo.name,lat:destInfo.lat,lng:destInfo.lng};
-  if(kind==='fav'){PLACES.fav=(PLACES.fav||[]).filter(function(f){return f.n!==p.n});PLACES.fav.push(p)}
-  else PLACES[kind]=p;
+function renderPlaceDlg(){
+  var g=$('#pdIcons');g.innerHTML='';
+  ICONS.forEach(function(ic){
+    var b=document.createElement('button');b.className='ic'+(ic===dlg.i?' on':'');b.textContent=ic;
+    b.onclick=function(){dlg.i=ic;renderPlaceDlg()};
+    g.appendChild(b);
+  });
+  $('#pdLoc').textContent=dlg.lat.toFixed(5)+', '+dlg.lng.toFixed(5);
+}
+function savePlaceDlg(){
+  if(!dlg)return;
+  var n=$('#pdName').value.trim();
+  if(!n){toast('Beri nama tempat');return}
+  var p;
+  if(dlg.id)p=PL.filter(function(x){return x.id===dlg.id})[0];
+  if(!p&&dlg.k)p=findK(dlg.k);
+  if(!p){p={id:dlg.k||('p'+Date.now())};if(dlg.k)p.k=dlg.k;PL.push(p)}
+  p.n=n;p.i=dlg.i;p.lat=dlg.lat;p.lng=dlg.lng;
   savePlaces();buildPlaces();
-  toast('Disimpan: '+p.n);
+  $('#placeDlg').hidden=true;dlg=null;
+  toast('Disimpan: '+n);
+}
+function deletePlaceDlg(){
+  if(!dlg||!dlg.id)return;
+  var ok=true;try{ok=window.confirm('Padam '+($('#pdName').value||'tempat ini')+'?')}catch(e){}
+  if(!ok)return;
+  PL=PL.filter(function(x){return x.id!==dlg.id});
+  savePlaces();buildPlaces();$('#placeDlg').hidden=true;dlg=null;toast('Dipadam');
 }
 function nearestPlaceName(lat,lng){
   var best=null,bd=400;
-  [['Rumah',PLACES.home],['Kerja',PLACES.work]].concat((PLACES.fav||[]).map(function(f){return [f.n,f]})).forEach(function(x){
-    if(!x[1])return;var d=haversine(lat,lng,x[1].lat,x[1].lng);if(d<bd){bd=d;best=x[0]}
-  });
+  PL.forEach(function(x){var d=haversine(lat,lng,x.lat,x.lng);if(d<bd){bd=d;best=x.n}});
   return best;
+}
+function addRecent(n,lat,lng){
+  if(!n||/^(Lokasi dipilih|Lokasi dari link)$/.test(n))n=n||'';
+  if(!n)return;
+  RECENT=RECENT.filter(function(r){return !(r.n===n||haversine(r.lat,r.lng,lat,lng)<30)});
+  RECENT.unshift({n:n,lat:lat,lng:lng});
+  RECENT=RECENT.slice(0,12);LS.set('recent',RECENT);
+}
+function showRecent(){
+  if($('#q').value.trim())return;
+  var box=$('#results');box.innerHTML='';
+  var d=document.createElement('div');d.className='gm';d.textContent='➕ Tambah tempat';
+  d.onclick=function(){box.hidden=true;$('#q').blur();openPlaceDlg({n:'',i:'⭐'})};
+  box.appendChild(d);
+  if(RECENT.length){
+    var h=document.createElement('div');h.className='hd';h.textContent='Carian terkini';box.appendChild(h);
+    RECENT.slice(0,8).forEach(function(r,ix){
+      var row=document.createElement('div');row.className='rc';
+      row.innerHTML='<span>🕘</span><span class="rt"></span><button class="rx" aria-label="Buang">×</button>';
+      row.querySelector('.rt').textContent=r.n;
+      row.onclick=function(e){
+        if(e.target.className==='rx'){RECENT.splice(ix,1);LS.set('recent',RECENT);showRecent();return}
+        box.hidden=true;$('#q').blur();setDestination(r.lat,r.lng,r.n);
+      };
+      box.appendChild(row);
+    });
+  }
+  box.hidden=false;
 }
 
 /* ---------- carian ---------- */
@@ -1025,17 +1317,63 @@ function pasteSearch(){
   try{navigator.clipboard.readText().then(go,function(){toast('Tak dapat baca clipboard')})}catch(e){toast('Tak dapat baca clipboard')}
 }
 
+/* ---------- cuaca di destinasi (Open-Meteo, tanpa key) ---------- */
+function wxInfo(c){
+  if(c===0)return ['☀️',L('Cerah','Clear')];
+  if(c<=2)return ['🌤',L('Separa cerah','Partly sunny')];
+  if(c===3)return ['☁️',L('Mendung','Cloudy')];
+  if(c===45||c===48)return ['🌫',L('Berkabus','Foggy')];
+  if(c>=51&&c<=57)return ['🌦',L('Renyai','Drizzle')];
+  if(c>=61&&c<=67)return ['🌧',L('Hujan','Rain')];
+  if(c>=80&&c<=82)return ['🌧',L('Hujan lebat','Heavy showers')];
+  if(c>=95)return ['⛈',L('Ribut petir','Thunderstorm')];
+  return ['🌥',L('Berawan','Cloudy')];
+}
+function wxRain(c,p){return (c>=51&&c<=67)||(c>=80)||p>=60}
+function wxAt(lat,lng,when){
+  return fetch('https://api.open-meteo.com/v1/forecast?latitude='+lat.toFixed(3)+'&longitude='+lng.toFixed(3)+'&current=weather_code,temperature_2m&hourly=weather_code,precipitation_probability,temperature_2m&timezone=auto&forecast_days=2')
+  .then(function(r){if(!r.ok)throw 0;return r.json()}).then(function(j){
+    var H=j.hourly||{},T=H.time||[],bi=0,bd=1e18;
+    T.forEach(function(t,i){var d=Math.abs(new Date(t).getTime()-when);if(d<bd){bd=d;bi=i}});
+    return {now:j.current||{},c:H.weather_code[bi],t:H.temperature_2m[bi],p:H.precipitation_probability?H.precipitation_probability[bi]:0};
+  });
+}
+var wxTok=0;
+function showWx(){
+  var box=$('#wx');if(!box)return;
+  if(!destInfo||!route){box.hidden=true;return}
+  var key=destInfo.lat.toFixed(3)+','+destInfo.lng.toFixed(3)+','+Math.round(route.dur/600);
+  if(box._k===key&&!box.hidden)return;
+  box._k=key;var my=++wxTok,eta=Date.now()+route.dur*1000;
+  box.hidden=false;box.textContent=L('Menyemak cuaca di destinasi...','Checking weather at destination...');
+  Promise.all([wxAt(destInfo.lat,destInfo.lng,eta),me?wxAt(me.lat,me.lng,Date.now()).catch(function(){return null}):Promise.resolve(null)]).then(function(r){
+    if(my!==wxTok)return;
+    var d=r[0],h=r[1],di=wxInfo(d.c),rain=wxRain(d.c,d.p||0);
+    var txt=di[0]+' '+L('Di destinasi (tiba ','At destination (arrive ')+clockStr(new Date(eta))+'): '+di[1]+' · '+Math.round(d.t)+'°C'+(d.p?' · '+d.p+'%':'');
+    if(h){var hi=wxInfo(h.c);txt+='\n'+hi[0]+' '+L('Di sini sekarang: ','Here now: ')+hi[1]+' · '+Math.round(h.t)+'°C'}
+    if(rain)txt+='\n☂️ '+L('Dijangka hujan di sana. Sediakan baju hujan!','Rain expected there. Pack a raincoat!');
+    box.textContent=txt;box.classList.toggle('rain',rain);box._rain=rain;
+  }).catch(function(){if(my===wxTok){box.hidden=true}});
+}
+
 /* ---------- laluan ---------- */
+function setVeh(v,quiet){
+  VEH=v;LS.set('veh',v);
+  var b=$('#btnVeh');if(b)b.textContent=v==='moto'?'🏍':'🚗';
+  var sel=$('#selVeh');if(sel)sel.value=v;
+  Array.prototype.forEach.call(document.querySelectorAll('#vehSeg button'),function(x){x.classList.toggle('on',x.getAttribute('data-v')===v)});
+  if(!quiet&&destInfo&&me&&!navActive&&!$('#sheet').hidden)setDestination(destInfo.lat,destInfo.lng,destInfo.name);
+}
 function curAvoid(){
   return {toll:VEH==='car'&&$('#avoidToll').checked,hwy:VEH==='moto'&&$('#avoidHwy').checked};
 }
 function setDestination(lat,lng,name){
   if(!me){toast('Menunggu GPS...');return}
   destInfo={lat:lat,lng:lng,name:name};
-  $('#saveAs').value='';
   toast('Mengira laluan...',9000);
   getRoutes(me,destInfo).then(function(list){
     toast('',1);$('#toast').hidden=true;
+    addRecent(name,lat,lng);
     showOptions(list);
   }).catch(function(e){toast(e.message,4500)});
 }
@@ -1067,8 +1405,10 @@ function selectOpt(i,fit){
   });
   drawRoute(route);
   var alts=routeOpts.filter(function(r,k){return k!==i}).map(function(r){return {type:'Feature',geometry:{type:'LineString',coordinates:r.coords},properties:{}}});
+  ALTD={type:'FeatureCollection',features:alts};
   var src=map.getSource('alts');
-  if(src)src.setData({type:'FeatureCollection',features:alts});
+  if(src)src.setData(ALTD);
+  showWx();
   if(fit){
     var bb=new maplibregl.LngLatBounds();
     routeOpts.forEach(function(r){r.coords.forEach(function(c){bb.extend(c)})});
@@ -1109,8 +1449,10 @@ function decodePoly6(str){
 function valhallaBody(coordinates,pref,polys){
   var a=curAvoid(),moto=VEH==='moto',co={};
   var o={};
+  if(!moto){o.use_living_streets=0;o.service_penalty=30;o.use_tracks=0}
+  if(pref==='fastest'){o.use_highways=1;o.use_tolls=0.8}
+  if(pref==='recommended'){o.use_highways=0.7;o.use_tolls=0.5}
   if(pref==='shortest')o.shortest=true;
-  if(pref==='recommended'){o.use_highways=0.35;o.use_tolls=0.5}
   if(a.hwy)o.use_highways=0;
   if(a.toll)o.use_tolls=0;
   co[moto?'motorcycle':'auto']=o;
@@ -1163,14 +1505,16 @@ function fetchRoute(coordinates,pref,polys){
   });
 }
 function drawRoute(r){
+  RTD={type:'Feature',geometry:{type:'LineString',coordinates:r.coords}};
   var src=map.getSource('route');
-  if(src)src.setData({type:'Feature',geometry:{type:'LineString',coordinates:r.coords}});
+  if(src)src.setData(RTD);
 }
 function clearRoute(){
+  RTD={type:'FeatureCollection',features:[]};ALTD={type:'FeatureCollection',features:[]};
   var src=map.getSource('route');
-  if(src)src.setData({type:'FeatureCollection',features:[]});
+  if(src)src.setData(RTD);
   var a=map.getSource('alts');
-  if(a)a.setData({type:'FeatureCollection',features:[]});
+  if(a)a.setData(ALTD);
   if(destMarker){destMarker.remove();destMarker=null}
   route=null;routeOpts=[];
 }
@@ -1228,7 +1572,8 @@ function prepareTrip(R){
     var part=q2.shift();if(!part)return Promise.resolve();
     return runChunk(part).then(worker);
   }
-  p=(dataState===1)?Promise.resolve(localEvents(R,evs)):Promise.all([worker(),worker()]);
+  var ready=(dataState===0&&DATAP)?DATAP:Promise.resolve();
+  p=ready.then(function(){return (dataState===1)?localEvents(R,evs):Promise.all([worker(),worker()])});
   R.closed=[];
   return p.then(function(){
     addMyCams(R,evs);
@@ -1546,7 +1891,7 @@ function startNav(){
   keepScreenOn(true);
   startRec();
   updateCompass();
-  map.easeTo({center:[me.lng,me.lat],zoom:AZ?targetZoomNow():17,pitch:45,padding:{top:Math.round(window.innerHeight*0.4),bottom:0,left:0,right:0},duration:800});
+  ease({center:[me.lng,me.lat],zoom:AZ?targetZoomNow():17,pitch:45,padding:{top:Math.round(window.innerHeight*0.4),bottom:0,left:0,right:0},duration:800});
   speak(tx().start);
   updateNav();
 }
@@ -1593,6 +1938,7 @@ function shutdownApp(){
   stopWatch();keepScreenOn(false);stopSpeak();
   setTimeout(function(){
     try{if(APP&&APP.exitApp){APP.exitApp();return}}catch(e){}
+    try{if(APP&&APP.minimizeApp){APP.minimizeApp();toast('Tidak dapat tutup sepenuhnya. App dikecilkan.',3000);return}}catch(e){}
     try{window.close()}catch(e){}
     toast('Tutup app secara manual',3000);
   },150);
@@ -1615,7 +1961,7 @@ function endNav(){
   clearTrip();
   $('#btnCam').hidden=true;
   hideLanes();
-  map.easeTo({pitch:0,bearing:0,padding:{top:0,bottom:0,left:0,right:0},duration:600});
+  ease({pitch:0,bearing:0,padding:{top:0,bottom:0,left:0,right:0},duration:600});
   setFollow(true);
   updateCompass();updateRing();
   if(wasRec&&TRIPS.length)toast('Perjalanan disimpan dalam Rekod',3000);
@@ -1749,15 +2095,20 @@ function repeatTrip(t){
 /* ---------- suara ---------- */
 function speak(text){
   if(!VOICE)return;
+  var web=function(){
+    try{
+      var s=window.speechSynthesis;if(!s)return;
+      var u=new SpeechSynthesisUtterance(text);u.lang=tx().tts;u.rate=1;
+      s.cancel();s.speak(u);
+    }catch(e){}
+  };
   try{
     if(TTS){
-      TTS.speak({text:text,lang:tx().tts,rate:1.0,pitch:1.0,volume:1.0,queueStrategy:0}).catch(function(){});
+      TTS.speak({text:text,lang:tx().tts,rate:1.0,pitch:1.0,volume:1.0,category:'ambient',queueStrategy:0}).catch(function(){web()});
       return;
     }
-    var s=window.speechSynthesis;if(!s)return;
-    var u=new SpeechSynthesisUtterance(text);u.lang=tx().tts;u.rate=1;
-    s.cancel();s.speak(u);
   }catch(e){}
+  web();
 }
 function stopSpeak(){
   try{if(TTS)TTS.stop().catch(function(){});else if(window.speechSynthesis)window.speechSynthesis.cancel()}catch(e){}
@@ -1782,26 +2133,28 @@ function openSettings(){
   $('#selTheme').value=THEME;$('#swAZ').checked=AZ;$('#selZ').value=String(ZOFF);
   $('#swAes').checked=!!SHOW.aes;$('#swRr').checked=!!SHOW.rr;$('#swSig').checked=!!SHOW.sig;$('#swToll').checked=!!SHOW.toll;
   $('#selChip').value=String(CHIPSEC);
-  $('#swInc').checked=!!SHOW.inc;$('#ttKey').value=TTKEY;$('#swAlways').checked=ALWAYS;
+  $('#swInc').checked=!!SHOW.inc;$('#ttKey').value=TTBUILT?'':TTKEY;$('#ttKey').placeholder=TTBUILT?'Key dalam app sudah aktif (dari repo)':'Kosongkan jika tak guna';$('#swAlways').checked=ALWAYS;
   $('#tolNote').textContent=TOL.updated?('Harga tol rujukan dikemas kini: '+TOL.updated+'. Sumber: motorist.my. Semak papan tanda tol untuk harga sebenar.'):'Jadual harga tol belum diisi.';
+  var dv=$('#verNote');
+  if(dv&&DATA){dv.setAttribute('data-d','1')}
   $('#settings').hidden=false;
 }
 function closeSettings(){$('#settings').hidden=true}
 function saveSettings(){
   VOICE=$('#swVoice').checked;DIM=$('#swDim').checked;LANG=$('#selLang').value;
-  VEH=$('#selVeh').value;PREF=$('#selPref').value;HWY=$('#swHwy').checked;
+  VEH=$('#selVeh').value;setVeh(VEH,true);PREF=$('#selPref').value;HWY=$('#swHwy').checked;
   THEME=$('#selTheme').value;AZ=$('#swAZ').checked;ZOFF=parseFloat($('#selZ').value)||0;
   SHOW={aes:$('#swAes').checked,rr:$('#swRr').checked,sig:$('#swSig').checked,toll:$('#swToll').checked,inc:$('#swInc').checked};
   CHIPSEC=parseInt($('#selChip').value,10)||5;
-  TTKEY=$('#ttKey').value.trim();LS.set('ttKey',TTKEY);
+  var tk=$('#ttKey').value.trim();if(tk||!TTBUILT){TTKEY=tk;LS.set('ttKey',TTKEY)}
   var al=$('#swAlways').checked;LS.set('always',al);
   if(al!==ALWAYS){ALWAYS=al;if(!navActive)startWatch(ALWAYS)}
-  LS.set('voice',VOICE);LS.set('dim',DIM);LS.set('lang',LANG);
+  LS.set('voice',VOICE);LS.set('dim',DIM);LS.set('lang2',LANG);
   LS.set('veh',VEH);LS.set('pref',PREF);LS.set('avoidHwy',HWY);LS.set('theme',THEME);LS.set('az',AZ);LS.set('zoff',ZOFF);LS.set('show',SHOW);LS.set('chipsec',CHIPSEC);
   if(!DIM)document.documentElement.style.setProperty('--dim','1');
   $('#avoidHwy').checked=HWY;
   applyTheme();
-  var langChanged=LS.get('langApplied','ms')!==LANG;
+  var langChanged=LANG!==LANG0;
   closeSettings();toast('Disimpan');
   if(langChanged){LS.set('langApplied',LANG);setTimeout(function(){location.reload()},600)}
 }
@@ -1810,7 +2163,7 @@ function testVoice(){
   var wasVoice=VOICE;VOICE=true;
   if(TTS&&TTS.isLanguageSupported){
     TTS.isLanguageSupported({lang:tx().tts}).then(function(r){
-      if(r&&r.supported===false)toast('Suara '+(LANG==='ms'?'Melayu':'English')+' belum dipasang. Tekan "Pasang suara"',5000);
+      if(r&&r.supported===false)toast(L('Suara '+(LANG==='ms'?'Melayu':'English')+' belum dipasang. Tekan "Pasang suara"','Voice not installed. Tap "Install voice"'),5000);
     }).catch(function(){});
   }
   speak(tx().test);
@@ -1818,7 +2171,7 @@ function testVoice(){
 }
 function installVoice(){
   if(TTS&&TTS.openInstall){TTS.openInstall().catch(function(){toast('Buka Tetapan phone > Output teks-ke-ucapan untuk pasang suara',6000)})}
-  else toast('Fungsi ini hanya ada dalam app Android',4000);
+  else toast('Tak dapat buka tetapan suara. Buka Tetapan phone, Output teks-ke-ucapan, Enjin Google, Pasang data suara.',7000);
 }
 
 /* ---------- mula ---------- */
@@ -1861,7 +2214,19 @@ var EN_FULL={
 'Pam minyak':'Petrol','Plaza tol':'Toll plaza','Masjid/surau':'Mosque','Hospital/klinik':'Hospital/clinic','Bengkel/tayar':'Workshop/tyres','Cas EV':'EV charging','Polis':'Police','Sekolah':'School','Lorong motor':'Motorcycle lane','Kamera laju':'Speed camera','Tol':'Toll','Destinasi':'Destination','Sampai':'Arrive',
 'Mengira':'Calculating','Padam':'Delete','Rekod':'History'
 };
+
+Object.assign(EN_FULL,{
+'Tambah':'Add','Simpan tempat':'Save place','Ubah tempat':'Edit place','Nama':'Name','Ikon':'Icon','Lokasi':'Location','Contoh: Rumah mak':'Example: Mum\'s house',
+'📍 Guna lokasi saya sekarang':'📍 Use my current location','Padam':'Delete','Simpan':'Save','Jenis peta':'Map type','Lalai':'Default','Standard OSM':'Standard OSM',
+'Peta vektor tajam dan jelas, ala Waze':'Sharp vector map, Waze-style','Peta OpenStreetMap biasa':'Plain OpenStreetMap','Rupa bumi':'Terrain','Kontur dan bukit (terrain)':'Contours and hills','Satelit':'Satellite','Imej satelit':'Satellite imagery',
+'🚗 Kereta':'🚗 Car','🏍 Motosikal':'🏍 Motorcycle','⭐ Simpan tempat ini':'⭐ Save this place','➕ Tambah tempat':'➕ Add a place','Carian terkini':'Recent searches','Kenderaan':'Vehicle',
+'Beri nama tempat':'Give the place a name','Dipadam':'Deleted','Kenderaan: Motosikal':'Vehicle: Motorcycle','Kenderaan: Kereta':'Vehicle: Car',
+'Peta vektor tak dapat dimuat. Guna peta standard.':'Vector map could not load. Using standard map.',
+'Tak dapat buka tetapan suara. Buka Tetapan phone, Output teks-ke-ucapan, Enjin Google, Pasang data suara.':'Cannot open voice settings. Open phone Settings, Text-to-speech output, Google engine, Install voice data.',
+'Tidak dapat tutup sepenuhnya. App dikecilkan.':'Could not fully close. App minimised.'
+});
 var EN_PH=[
+[/Terpantas/g,'Fastest'],[/Terpendek/g,'Shortest'],[/Seimbang/g,'Balanced'],[/Laluan sama/g,'Same route'],
 [/Bebas tol/g,'Toll-free'],[/Ada tol/g,'Has toll'],[/Tiada tol/g,'No toll'],[/Kamera laju/g,'Speed camera'],[/Lampu isyarat/g,'Traffic light'],[/Jalan ditutup/g,'Road closed'],[/Kerja jalan/g,'Roadworks'],
 [/\bTol\b/g,'Toll'],[/km\/j/g,'km/h'],[/ · had /g,' · limit '],[/ · tiba /g,' · arrive '],[/\btiba\b/g,'arrive'],[/Laju tertinggi/g,'Top speed'],[/Purata/g,'Average'],[/ · Masa /g,' · Time '],[/Saya dalam perjalanan ke /g,"I'm on my way to "],
 [/Lokasi saya: /g,'My location: '],[/Disimpan: /g,'Saved: '],[/Padam /g,'Delete '],[/Versi baru \(build (\d+)\) sudah sedia\. Kau guna build (\d+)\. Tekan Kemas kini, muat turun APK, kemudian ketuk fail itu untuk install\. Data tersimpan kekal\./g,'New version (build $1) is ready. You are on build $2. Tap Update, download the APK, then tap the file to install. Your saved data stays.'],
@@ -1984,7 +2349,7 @@ function checkUpdate(manual){
 }
 document.addEventListener('DOMContentLoaded',function(){
   startI18n();
-  loadOsmData();
+  DATAP=loadOsmData();
   setTimeout(window.__sharePing,1200);
   fetch('version.json').then(function(r){return r.ok?r.json():null}).then(function(j){if(j&&j.build){BUILD=j.build;$('#verNote').textContent='JOMAPZ build '+j.build+' · dibina oleh Pratama Yudha'}else{$('#verNote').textContent='JOMAPZ · dibina oleh Pratama Yudha'}}).catch(function(){});
   setTimeout(function(){checkUpdate(false)},7000);
@@ -1992,6 +2357,7 @@ document.addEventListener('DOMContentLoaded',function(){
   $('#btnDiag').onclick=runDiag;
   $('#btnUpdNo').onclick=function(){$('#upd').hidden=true;if(updInfo)LS.set('updSkip',{n:updInfo.n,t:Date.now()})};
   $('#btnUpdYes').onclick=function(){$('#upd').hidden=true;if(updInfo)openUrl(updInfo.url)};
+  fetch('config.json').then(function(r){return r.ok?r.json():null}).then(function(j){if(j&&j.tt&&!TTKEY){TTKEY=j.tt;TTBUILT=true}}).catch(function(){});
   fetch('tol.json').then(function(r){return r.ok?r.json():null}).then(function(j){if(j&&j.plazas)TOL=j}).catch(function(){});
   applyTheme();
   setInterval(applyTheme,60000);
@@ -2006,14 +2372,14 @@ document.addEventListener('DOMContentLoaded',function(){
   $('#btnLoc').onclick=function(){
     if(!me){toast('Menunggu GPS...');return}
     setFollow(true);azPause=0;
-    if(navActive)camFollow();else map.easeTo({center:[me.lng,me.lat],zoom:Math.max(map.getZoom(),15),duration:600});
+    if(navActive)camFollow();else ease({center:[me.lng,me.lat],zoom:Math.max(map.getZoom(),15),duration:600});
   };
   $('#btnNorth').onclick=function(){
     if(navActive){
       headingUp=!headingUp;
-      if(!headingUp){map.easeTo({bearing:0,duration:500});toast('Utara di atas',1800)}
+      if(!headingUp){ease({bearing:0,duration:500});toast('Utara di atas',1800)}
       else{toast('Arah perjalanan di atas',1800);if(me&&follow)camFollow()}
-    }else map.easeTo({bearing:0,duration:500});
+    }else ease({bearing:0,duration:500});
   };
   $('#btnSet').onclick=openSettings;
   $('#btnSetClose').onclick=closeSettings;
@@ -2027,7 +2393,17 @@ document.addEventListener('DOMContentLoaded',function(){
   $('#btnCancel').onclick=function(){$('#sheet').hidden=true;$('#top').hidden=false;setMode(false,false);clearRoute();setFollow(true)};
   $('#btnEnd').onclick=endNav;
   $('#btnShareEta').onclick=shareEta;
-  $('#saveAs').onchange=function(){savePlaceAs($('#saveAs').value);$('#saveAs').value=''};
+  $('#btnSavePlace').onclick=function(){if(destInfo)openPlaceDlg({n:destInfo.name,lat:destInfo.lat,lng:destInfo.lng,i:'⭐'})};
+  $('#pdSave').onclick=savePlaceDlg;
+  $('#pdDel').onclick=deletePlaceDlg;
+  $('#pdCancel').onclick=function(){$('#placeDlg').hidden=true;dlg=null};
+  $('#pdUseMe').onclick=function(){if(!me){toast('Menunggu GPS...');return}dlg.lat=me.lat;dlg.lng=me.lng;renderPlaceDlg()};
+  $('#q').addEventListener('focus',showRecent);
+  $('#btnVeh').onclick=function(){setVeh(VEH==='moto'?'car':'moto');toast(VEH==='moto'?'Kenderaan: Motosikal':'Kenderaan: Kereta',1800)};
+  Array.prototype.forEach.call(document.querySelectorAll('#vehSeg button'),function(b){b.onclick=function(){setVeh(b.getAttribute('data-v'))}});
+  setVeh(VEH,true);
+  $('#btnLayers').onclick=function(){buildMapType();$('#mapType').hidden=false};
+  $('#btnMtClose').onclick=function(){$('#mapType').hidden=true};
   function recompute(){if(destInfo&&me&&!navActive)setDestination(destInfo.lat,destInfo.lng,destInfo.name)}
   $('#avoidToll').onchange=recompute;
   $('#avoidHwy').onchange=recompute;
@@ -2040,8 +2416,9 @@ document.addEventListener('DOMContentLoaded',function(){
   if(APP&&APP.addListener){
     APP.addListener('backButton',function(){
       if(!$('#prep').hidden)return;
-      var ids=['#settings','#trips','#resume'],i;
+      var ids=['#placeDlg','#mapType','#settings','#trips','#resume'],i;
       for(i=0;i<ids.length;i++){if(!$(ids[i]).hidden){$(ids[i]).hidden=true;return}}
+      if(pinPop){clearPin();return}
       if(!$('#sheet').hidden){$('#btnCancel').click();return}
       if(!$('#results').hidden){$('#results').hidden=true;return}
       try{if(APP.minimizeApp)APP.minimizeApp()}catch(e){}

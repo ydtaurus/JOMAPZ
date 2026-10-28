@@ -82,6 +82,18 @@ jobs:
           PY
           grep -n "SEND" android/app/src/main/AndroidManifest.xml
 
+      - name: Kunci TomTom (pilihan, dari GitHub Secret)
+        env:
+          TT: ${{ secrets.TOMTOM_API_KEY }}
+        run: |
+          if [ -n "$TT" ]; then
+            printf '{"tt":"%s"}' "$TT" > www/config.json
+            echo "Kunci TomTom dimasukkan ke dalam APK"
+          else
+            echo '{}' > www/config.json
+            echo "TOMTOM_API_KEY tiada. Ciri jalan ditutup senyap."
+          fi
+
       - name: Nombor versi
         run: |
           echo '{"build":${{ github.run_number }}}' > www/version.json
