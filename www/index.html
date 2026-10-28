@@ -4,42 +4,46 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
 <title>JOMAPZ</title>
-<link rel="stylesheet" href="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css">
+<link rel="stylesheet" href="lib/maplibre-gl.css">
 <style>
-:root{--fg:#15171a;--mut:#667085;--pri:#1e8e3e;--bad:#d93025;--card:rgba(255,255,255,.97);--dim:1;--lift:0px;--top:env(safe-area-inset-top,0px);--bot:env(safe-area-inset-bottom,0px)}
+:root{--fg:#15171a;--mut:#667085;--pri:#1e8e3e;--bad:#d93025;--card:rgba(255,255,255,.97);--cardS:#fff;--line:#e4e7ec;--btn:#eef0f3;--on:#e6f4ea;--onfg:#0b5a22;--bgp:#dfe3e8;--dim:1;--lift:0px;--top:env(safe-area-inset-top,0px);--bot:env(safe-area-inset-bottom,0px)}
+body.night{--fg:#f1f5f9;--mut:#9aa7ba;--card:rgba(24,31,44,.97);--cardS:#1b2331;--line:#34405a;--btn:#2a3448;--on:#173b25;--onfg:#c9f27a;--bgp:#0d1117;color-scheme:dark}
 body.nav{--lift:74px}
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
-html,body{margin:0;height:100%;font-family:system-ui,-apple-system,Roboto,sans-serif;color:var(--fg);overflow:hidden;background:#dfe3e8}
+html,body{margin:0;height:100%;font-family:system-ui,-apple-system,Roboto,sans-serif;color:var(--fg);overflow:hidden;background:var(--bgp)}
 button{font:inherit;color:inherit;border:0;background:none;cursor:pointer}
 [hidden]{display:none!important}
 #map{position:absolute;inset:0}
 #map .maplibregl-canvas{filter:brightness(var(--dim));transition:filter .4s}
+body.night #map .maplibregl-canvas{filter:invert(.93) hue-rotate(180deg) brightness(calc(var(--dim)*.95)) contrast(.92) saturate(.8)}
 .maplibregl-ctrl-bottom-left,.maplibregl-ctrl-bottom-right{display:none}
 #top{position:absolute;left:10px;right:10px;top:calc(var(--top) + 10px);z-index:5}
 #searchRow{display:flex;background:var(--card);border-radius:14px;box-shadow:0 2px 10px rgba(0,0,0,.25);overflow:hidden}
-#q{flex:1;border:0;outline:0;padding:14px;font-size:16px;background:transparent;min-width:0}
+#q{flex:1;border:0;outline:0;padding:14px;font-size:16px;background:transparent;color:var(--fg);min-width:0}
 #goSearch{width:52px;font-size:20px}
 #results{background:var(--card);border-radius:14px;margin-top:6px;box-shadow:0 2px 10px rgba(0,0,0,.25);max-height:42vh;overflow:auto}
-#results div{padding:12px 14px;border-bottom:1px solid #eee;font-size:15px}
+#results div{padding:12px 14px;border-bottom:1px solid var(--line);font-size:15px}
 #results div:last-child{border-bottom:0}
-#chips{display:flex;gap:8px;margin-top:8px;overflow-x:auto;padding-bottom:4px;scrollbar-width:none}
-#chips::-webkit-scrollbar{display:none}
-.chip{flex:none;display:flex;align-items:center;gap:5px;background:var(--card);border-radius:20px;padding:8px 12px;font-size:14px;box-shadow:0 1px 5px rgba(0,0,0,.25);border:2px solid transparent}
-.chip.on{background:#e6f4ea;border-color:var(--pri);color:#0b5a22}
+.scroll{display:flex;gap:8px;margin-top:8px;overflow-x:auto;padding-bottom:4px;scrollbar-width:none}
+.scroll::-webkit-scrollbar{display:none}
+.chip{flex:none;display:flex;align-items:center;gap:5px;background:var(--card);border-radius:20px;padding:8px 12px;font-size:14px;box-shadow:0 1px 5px rgba(0,0,0,.25);border:2px solid transparent;color:var(--fg)}
+.chip.on{background:var(--on);border-color:var(--pri);color:var(--onfg)}
 .poi{width:32px;height:32px;border-radius:50%;background:#fff;border:2px solid #fff;box-shadow:0 1px 5px rgba(0,0,0,.45);display:flex;align-items:center;justify-content:center;font-size:18px}
-#me{width:22px;height:22px;border-radius:50%;background:var(--pri);border:3px solid #fff;box-shadow:0 0 8px rgba(0,0,0,.55);position:relative}
-#me::after{content:"";position:absolute;left:3px;top:-11px;border:6px solid transparent;border-bottom:9px solid var(--pri);border-top:0}
+#me{width:44px;height:44px;position:relative;display:flex;align-items:center;justify-content:center}
+#me svg{width:34px;height:34px;position:relative;z-index:2;filter:drop-shadow(0 1px 2px rgba(0,0,0,.55))}
+#acc{position:absolute;left:50%;top:50%;border-radius:50%;background:rgba(166,226,46,.16);border:1.5px solid rgba(166,226,46,.6);transform:translate(-50%,-50%);width:0;height:0;pointer-events:none;display:none}
 .fabs{position:absolute;right:12px;bottom:calc(var(--bot) + 20px + var(--lift));display:flex;flex-direction:column;gap:12px;z-index:5}
-.fab{width:52px;height:52px;border-radius:50%;background:var(--card);box-shadow:0 2px 8px rgba(0,0,0,.35);font-size:24px}
+.fab{width:52px;height:52px;border-radius:50%;background:var(--card);box-shadow:0 2px 8px rgba(0,0,0,.35);font-size:24px;color:var(--fg);display:flex;align-items:center;justify-content:center}
+#btnNorth svg{width:28px;height:28px;transition:transform .3s}
 #speedBox{position:absolute;left:12px;bottom:calc(var(--bot) + 20px + var(--lift));display:flex;gap:10px;align-items:center;z-index:5}
 #spdCard{background:var(--card);border-radius:14px;padding:6px 14px;text-align:center;box-shadow:0 2px 8px rgba(0,0,0,.35);min-width:70px}
 #spd{font-size:30px;font-weight:700;line-height:1.05}
 #spdCard small{color:var(--mut);font-size:12px}
 #spdCard.over{background:var(--bad);color:#fff}
 #spdCard.over small{color:#fff}
-#lim{width:52px;height:52px;border-radius:50%;background:#fff;border:6px solid var(--bad);display:flex;align-items:center;justify-content:center;font-size:19px;font-weight:700;box-shadow:0 2px 8px rgba(0,0,0,.35)}
+#lim{width:52px;height:52px;border-radius:50%;background:#fff;color:#111;border:6px solid var(--bad);display:flex;align-items:center;justify-content:center;font-size:19px;font-weight:700;box-shadow:0 2px 8px rgba(0,0,0,.35)}
 #lim.est{border:4px dashed #98a2b3;color:#667085;font-size:15px}
-#road{position:absolute;left:12px;right:80px;bottom:calc(var(--bot) + 92px + var(--lift));z-index:5;background:var(--card);border-radius:12px;padding:8px 12px;box-shadow:0 2px 8px rgba(0,0,0,.35);text-align:left;display:block}
+#road{position:absolute;left:12px;right:80px;bottom:calc(var(--bot) + 92px + var(--lift));z-index:5;background:var(--card);border-radius:12px;padding:8px 12px;box-shadow:0 2px 8px rgba(0,0,0,.35);text-align:left;display:block;color:var(--fg)}
 #roadName{font-weight:700;font-size:16px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 #roadCoord{font-size:12px;color:var(--mut);margin-top:1px}
 body.prev .fabs,body.prev #speedBox,body.prev #road{display:none}
@@ -47,81 +51,187 @@ body.prev .fabs,body.prev #speedBox,body.prev #road{display:none}
 #bArrow{font-size:42px;line-height:1;width:54px;text-align:center}
 #bDist{font-size:28px;font-weight:700;line-height:1.1}
 #bText{font-size:16px;opacity:.95}
-#sheet,#navbar{position:absolute;left:0;right:0;bottom:0;z-index:7;background:var(--card);border-radius:20px 20px 0 0;padding:16px 18px calc(var(--bot) + 16px);box-shadow:0 -2px 14px rgba(0,0,0,.3)}
-#sheet h3{margin:0 0 2px;font-size:17px}
-#sMeta{font-size:22px;font-weight:700;margin:4px 0 10px}
-#sMeta small{font-size:14px;font-weight:400;color:var(--mut)}
+#cn{position:absolute;left:10px;top:calc(var(--top) + 98px);z-index:6;display:flex;flex-direction:column;gap:6px;align-items:flex-start;max-width:calc(100% - 90px);pointer-events:none}
+.cc{pointer-events:auto;display:flex;align-items:center;gap:8px;background:var(--card);border:1px solid var(--line);border-radius:18px;padding:5px 10px 5px 6px;font-size:13px;font-weight:600;box-shadow:0 1px 6px rgba(0,0,0,.3);transition:opacity .4s,transform .4s;color:var(--fg);max-width:100%}
+.cc .ct{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.cc.aes{background:#fdeceb;border-color:#f2b8b5;color:#8a1c14}
+body.night .cc.aes{background:#4a1f1c;color:#ffd4d0;border-color:#7a2b26}
+.cc .ci{width:22px;height:22px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;background:#a6e22e;color:#0f1a05;flex:none}
+.cc.aes .ci{background:#d93025;color:#fff}
+.cc .cx{margin-left:2px;width:22px;height:22px;color:var(--mut);font-size:16px;line-height:1;flex:none}
+.cc.out{opacity:0;transform:translateY(-6px)}
+#sheet,#navbar{position:absolute;left:0;right:0;bottom:0;z-index:7;background:var(--card);border-radius:20px 20px 0 0;padding:16px 18px calc(var(--bot) + 16px);box-shadow:0 -2px 14px rgba(0,0,0,.3);color:var(--fg)}
+#sheet h3{margin:0 0 6px;font-size:17px}
+.opt{display:flex;justify-content:space-between;align-items:center;width:100%;text-align:left;padding:10px 12px;margin-top:6px;border:2px solid var(--line);border-radius:12px;background:transparent}
+.opt.on{border-color:#7db81c;background:var(--on)}
+.opt b{display:block;font-size:15px}
+.opt small{color:var(--mut);font-size:13px}
+.opt .tm{font-size:20px;font-weight:700}
 .row{display:flex;gap:10px;align-items:center;margin-top:10px}
 .btn{flex:1;padding:14px;border-radius:12px;font-weight:600;font-size:16px;text-align:center}
 .btn.p{background:var(--pri);color:#fff}
-.btn.s{background:#eef0f3}
+.btn.s{background:var(--btn)}
 .btn.d{background:var(--bad);color:#fff}
-#navbar{display:flex;align-items:center;justify-content:space-between;gap:12px;padding-top:12px;padding-bottom:calc(var(--bot) + 12px)}
+#navbar{display:flex;align-items:center;justify-content:space-between;gap:10px;padding-top:12px;padding-bottom:calc(var(--bot) + 12px)}
 #navbar .eta{font-size:22px;font-weight:700}
 #navbar small{display:block;font-size:14px;font-weight:400;color:var(--mut)}
-#navbar .btn{flex:none;padding:12px 22px}
-#toast{position:absolute;left:50%;top:calc(var(--top) + 90px);transform:translateX(-50%);background:rgba(20,22,26,.92);color:#fff;border-radius:20px;padding:10px 16px;font-size:14px;z-index:20;max-width:88%;text-align:center;pointer-events:none}
-#settings{position:absolute;inset:0;z-index:30;background:rgba(0,0,0,.5);display:flex;align-items:flex-end}
-#settings .box{width:100%;background:#fff;border-radius:20px 20px 0 0;padding:18px 18px calc(var(--bot) + 18px);max-height:92%;overflow:auto}
-#settings h3{margin:0 0 8px}
-#settings label{display:block;font-size:14px;color:var(--mut);margin:12px 0 4px}
-#settings input[type=text],#settings select{width:100%;padding:12px;border:1px solid #ccd;border-radius:10px;font-size:15px;background:#fff}
+#navbar .btn{flex:none;padding:12px 18px}
+#toast{position:absolute;left:50%;top:calc(var(--top) + 90px);transform:translateX(-50%);background:rgba(20,22,26,.92);color:#fff;border-radius:20px;padding:10px 16px;font-size:14px;z-index:40;max-width:88%;text-align:center;pointer-events:none}
+.ov{position:absolute;inset:0;z-index:30;background:rgba(0,0,0,.5);display:flex;align-items:flex-end}
+.ov .box{width:100%;background:var(--cardS);color:var(--fg);border-radius:20px 20px 0 0;padding:18px 18px calc(var(--bot) + 18px);max-height:92%;overflow:auto}
+.ov h3{margin:0 0 8px}
+.ov h4{margin:16px 0 4px;font-size:13px;color:var(--mut);font-weight:600;text-transform:none}
+.ov label{display:block;font-size:14px;color:var(--mut);margin:12px 0 4px}
+.ov input[type=text],.ov select,#saveAs{width:100%;padding:12px;border:1px solid var(--line);border-radius:10px;font-size:15px;background:var(--cardS);color:var(--fg)}
+#saveAs{margin-top:8px;padding:10px}
 .sw{display:flex;justify-content:space-between;align-items:center;padding:10px 0;font-size:16px;color:var(--fg)}
 .sw input{width:22px;height:22px}
 .note{font-size:13px;color:var(--mut);line-height:1.5;margin:6px 0}
-.maplibregl-popup-content{padding:12px 14px;border-radius:12px;font-size:14px;min-width:170px}
+.pr{display:flex;align-items:center;gap:10px;padding:9px 0;font-size:15px;border-bottom:1px solid var(--line)}
+.pr i{font-style:normal;width:24px;text-align:center}
+.trip{display:block;width:100%;text-align:left;padding:12px;border:1px solid var(--line);border-radius:12px;margin-top:8px}
+.trip b{display:block;font-size:15px}
+.trip small{color:var(--mut);font-size:13px}
+#splash{position:fixed;inset:0;z-index:100;background:#050806 url(splash.jpg) center/cover no-repeat;transition:opacity .5s}
+#splash.out{opacity:0;pointer-events:none}
+#lanes{position:absolute;left:50%;transform:translateX(-50%);top:calc(var(--top) + 98px);z-index:6;display:flex;gap:4px;background:rgba(14,90,42,.96);padding:6px 8px;border-radius:12px;box-shadow:0 2px 10px rgba(0,0,0,.4)}
+#lanes svg{width:34px;height:46px;display:block}
+#lanes .ln{border-radius:6px;background:rgba(255,255,255,.14)}
+#lanes .ln.ok{background:rgba(255,255,255,.95)}
+body.lanes #cn{top:calc(var(--top) + 164px)}
+.cc.inc{background:#fdeceb;border-color:#f2b8b5;color:#8a1c14}
+body.night .cc.inc{background:#4a1f1c;color:#ffd4d0;border-color:#7a2b26}
+.cc.inc .ci{background:#d93025;color:#fff}
+.maplibregl-popup-content{padding:12px 14px;border-radius:12px;font-size:14px;min-width:170px;color:#15171a}
 .maplibregl-popup-content b{display:block;margin-bottom:2px}
 .maplibregl-popup-content button{margin-top:8px;width:100%;background:var(--pri);color:#fff;border-radius:8px;padding:9px;font-weight:600}
 </style>
 </head>
 <body>
+<div id="splash" aria-hidden="true"></div>
 <div id="map"></div>
 
 <div id="top">
   <div id="searchRow"><input id="q" type="search" placeholder="Cari tempat..." enterkeyhint="search" autocomplete="off"><button id="goSearch" aria-label="Cari">🔍</button></div>
   <div id="results" hidden></div>
-  <div id="chips"></div>
+  <div id="places" class="scroll"></div>
+  <div id="chips" class="scroll"></div>
 </div>
 
 <div id="banner" hidden><div id="bArrow">⬆</div><div><div id="bDist"></div><div id="bText"></div></div></div>
+<div id="lanes" hidden></div>
+<div id="cn"></div>
 
 <button id="road" aria-label="Kongsi lokasi saya"><div id="roadName">Mencari nama jalan...</div><div id="roadCoord">Menunggu GPS</div></button>
 
 <div id="speedBox"><div id="spdCard"><div id="spd">0</div><small>km/j</small></div><div id="lim" hidden></div></div>
 
-<div class="fabs"><button class="fab" id="btnLoc" aria-label="Lokasi saya">◎</button><button class="fab" id="btnSet" aria-label="Tetapan">⚙</button></div>
+<div class="fabs">
+  <button class="fab" id="btnNorth" aria-label="Kompas" hidden><svg viewBox="0 0 28 28"><path d="M14 3L20 15H8Z" fill="#d93025"/><path d="M14 25L8 15H20Z" fill="#8a94a0"/></svg></button>
+  <button class="fab" id="btnCam" aria-label="Tandakan kamera laju di sini" hidden>📷</button>
+  <button class="fab" id="btnTrips" aria-label="Rekod perjalanan">🕘</button>
+  <button class="fab" id="btnLoc" aria-label="Lokasi saya">◎</button>
+  <button class="fab" id="btnSet" aria-label="Tetapan">⚙</button>
+  <button class="fab" id="btnPower" aria-label="Matikan JOMAPZ" style="font-size:22px">⏻</button>
+</div>
+
+<div id="resume" class="ov" hidden>
+  <div class="box">
+    <h3>Sambung perjalanan?</h3>
+    <p class="note" id="resumeTxt"></p>
+    <div class="row"><button class="btn s" id="btnResumeNo">Buang</button><button class="btn p" id="btnResumeYes">Sambung</button></div>
+  </div>
+</div>
 
 <div id="sheet" hidden>
   <h3 id="sName"></h3>
-  <div id="sMeta"></div>
-  <label class="sw" style="padding:0"><span>Elak tol</span><input type="checkbox" id="avoidToll"></label>
+  <div id="opts"></div>
+  <p class="note" id="vehNote" hidden>Mod motosikal: enjin laluan tak tahu jalan yang melarang motosikal. Semak papan tanda dan guna "Elak lebuh raya" jika perlu.</p>
+  <label class="sw" id="rowToll" style="padding:6px 0 0"><span>Elak tol</span><input type="checkbox" id="avoidToll"></label>
+  <label class="sw" id="rowHwy" style="padding:6px 0 0" hidden><span>Elak lebuh raya</span><input type="checkbox" id="avoidHwy"></label>
+  <select id="saveAs"><option value="">Simpan tempat ini sebagai...</option><option value="home">Rumah</option><option value="work">Kerja</option><option value="fav">Kegemaran</option></select>
   <div class="row"><button class="btn s" id="btnCancel">Batal</button><button class="btn p" id="btnStart">Mula</button></div>
 </div>
 
 <div id="navbar" hidden>
   <div class="eta" id="eta"></div>
+  <button class="btn s" id="btnShareEta">Kongsi</button>
   <button class="btn d" id="btnEnd">Tamat</button>
 </div>
 
 <div id="toast" hidden></div>
 
-<div id="settings" hidden>
+<div id="prep" class="ov" hidden>
+  <div class="box">
+    <h3>Menyediakan perjalanan</h3>
+    <div class="pr"><i id="p1">✅</i><span>Laluan dan arahan belok</span></div>
+    <div class="pr"><i id="p2">⏳</i><span>Kamera, R&amp;R, tol dan lampu isyarat</span></div>
+    <div class="pr"><i id="p3">⏳</i><span>Suara arahan</span></div>
+    <p class="note" id="pNote">Selepas ini navigasi terus berjalan walaupun internet terputus. Peta yang belum dilihat mungkin kosong tanpa internet.</p>
+  </div>
+</div>
+
+<div id="trips" class="ov" hidden>
+  <div class="box">
+    <h3>Rekod perjalanan</h3>
+    <div id="tripList"></div>
+    <div id="tripDetail" hidden></div>
+    <div class="row"><button class="btn s" id="btnTripsClose">Tutup</button></div>
+  </div>
+</div>
+
+<div id="settings" class="ov" hidden>
   <div class="box">
     <h3>Tetapan JOMAPZ</h3>
     <label for="keyIn">OpenRouteService API key</label>
     <input type="text" id="keyIn" placeholder="Tampal key di sini" autocomplete="off" autocapitalize="off" spellcheck="false">
     <p class="note">Daftar percuma di openrouteservice.org, buat token, salin dan tampal di sini. Key disimpan dalam phone kau sahaja.</p>
+
+    <h4>Perjalanan</h4>
+    <label for="selVeh">Kenderaan</label>
+    <select id="selVeh"><option value="car">Kereta</option><option value="moto">Motosikal</option></select>
+    <label for="selPref">Laluan lalai</label>
+    <select id="selPref"><option value="fastest">Terpantas</option><option value="shortest">Terpendek</option><option value="recommended">Seimbang</option></select>
+    <div class="sw"><span>Motosikal: elak lebuh raya (lalai)</span><input type="checkbox" id="swHwy"></div>
+
+    <h4>Paparan</h4>
+    <label for="selTheme">Siang / malam</label>
+    <select id="selTheme"><option value="auto">Auto (ikut matahari)</option><option value="day">Siang</option><option value="night">Malam</option></select>
+    <div class="sw"><span>Zoom automatik ikut laju</span><input type="checkbox" id="swAZ"></div>
+    <label for="selZ">Tahap zoom</label>
+    <select id="selZ"><option value="0.5">Dekat</option><option value="0">Sederhana</option><option value="-0.5">Luas</option></select>
+    <div class="sw"><span>Malapkan peta bila laju melebihi had</span><input type="checkbox" id="swDim"></div>
+
+    <h4>Di skrin</h4>
+    <div class="sw"><span>Amaran kamera laju</span><input type="checkbox" id="swAes"></div>
+    <div class="sw"><span>R&amp;R di hadapan</span><input type="checkbox" id="swRr"></div>
+    <div class="sw"><span>Lampu isyarat</span><input type="checkbox" id="swSig"></div>
+    <div class="sw"><span>Tol di hadapan</span><input type="checkbox" id="swToll"></div>
+    <div class="sw"><span>Jalan ditutup / kerja jalan</span><input type="checkbox" id="swInc"></div>
+    <label for="selChip">Tempoh chip di skrin</label>
+    <select id="selChip"><option value="3">3 saat</option><option value="5">5 saat</option><option value="10">10 saat</option></select>
+
+    <label for="ttKey">TomTom API key (pilihan, untuk jalan ditutup dan kerja jalan)</label>
+    <input type="text" id="ttKey" placeholder="Kosongkan jika tak guna" autocomplete="off" autocapitalize="off" spellcheck="false">
+    <p class="note">Percuma tanpa kad kredit, had 2,500 permintaan sebulan. Setiap perjalanan guna 1 hingga 4 permintaan. Daftar di developer.tomtom.com. Tanpa key, ciri ini senyap.</p>
+    <p class="note" id="tolNote"></p>
+
+    <h4>Sentiasa aktif</h4>
+    <div class="sw"><span>Kekal berjalan di latar belakang (macam Waze)</span><input type="checkbox" id="swAlways"></div>
+    <p class="note">JOMAPZ kekal hidup dengan notifikasi tetap sehingga kau tekan butang Matikan (⏻) atau Force close. Supaya phone tak matikan JOMAPZ: buka Tetapan phone, Aplikasi, JOMAPZ, Bateri, pilih Tanpa had (Unrestricted).</p>
+    <div class="row"><button class="btn d" id="btnShutdown">Matikan JOMAPZ</button></div>
+
+    <h4>Suara</h4>
     <label for="selLang">Bahasa suara arahan</label>
     <select id="selLang"><option value="ms">Bahasa Melayu</option><option value="en">English</option></select>
     <div class="row"><button class="btn s" id="btnTest">Uji suara</button><button class="btn s" id="btnInstallVoice">Pasang suara</button></div>
     <p class="note">Suara datang dari enjin suara Google dalam phone kau. Kalau suara Melayu senyap, tekan "Pasang suara" dan muat turun data Bahasa Melayu.</p>
     <div class="sw"><span>Suara arahan</span><input type="checkbox" id="swVoice"></div>
-    <div class="sw"><span>Malapkan peta bila laju melebihi had</span><input type="checkbox" id="swDim"></div>
     <div class="row"><button class="btn s" id="btnSetClose">Tutup</button><button class="btn p" id="btnSetSave">Simpan</button></div>
   </div>
 </div>
 
-<script src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
+<script src="lib/maplibre-gl.js"></script>
 <script>
 (function(){
 'use strict';
@@ -135,7 +245,20 @@ var VOICE=LS.get('voice',true);
 var DIM=LS.get('dim',true);
 var LANG=LS.get('lang','ms');
 var ACTIVE=LS.get('layers',['fuel','toll']);
+var VEH=LS.get('veh','car');
+var PREF=LS.get('pref','fastest');
+var HWY=LS.get('avoidHwy',true);
+var THEME=LS.get('theme','auto');
+var AZ=LS.get('az',true);
+var ZOFF=LS.get('zoff',0);
+var CHIPSEC=LS.get('chipsec',5);
+var SHOW=Object.assign({aes:true,rr:true,sig:true,toll:true,inc:true},LS.get('show',{}));
+var TTKEY=LS.get('ttKey','');
+var MYCAMS=LS.get('myCams',[]);
+var PLACES=LS.get('places',{home:null,work:null,fav:[]});
+var TRIPS=LS.get('trips',[]);
 var OVERPASS='https://overpass-api.de/api/interpreter';
+var TOL={plazas:[]};
 
 /* ---------- plugin native ---------- */
 var NATIVE=false;
@@ -145,6 +268,8 @@ var BG=plug('BackgroundGeolocation');
 var TTS=plug('TextToSpeech');
 var KA=plug('KeepAwake');
 var SH=plug('Share');
+var APP=plug('App');
+var ALWAYS=LS.get('always',true);
 
 var LAYERS=[
  {id:'fuel',e:'⛽',n:'Pam minyak',q:'["amenity"="fuel"]',m:function(t){return t.amenity==='fuel'}},
@@ -152,6 +277,7 @@ var LAYERS=[
  {id:'toll',e:'🛣',n:'Tol',q:'["barrier"="toll_booth"]',m:function(t){return t.barrier==='toll_booth'}},
  {id:'cam',e:'📷',n:'Kamera laju',q:'["highway"="speed_camera"]',m:function(t){return t.highway==='speed_camera'}},
  {id:'rnr',e:'🅿',n:'R&R',q:'["highway"~"^(services|rest_area)$"]',m:function(t){return t.highway==='services'||t.highway==='rest_area'}},
+ {id:'lorong',e:'🏍',n:'Lorong motor',q:'["motorcycle"="designated"]["highway"]',m:function(t){return t.motorcycle==='designated'&&!!t.highway}},
  {id:'masjid',e:'🕌',n:'Masjid/surau',q:'["amenity"="place_of_worship"]["religion"="muslim"]',m:function(t){return t.amenity==='place_of_worship'&&t.religion==='muslim'}},
  {id:'hosp',e:'🏥',n:'Hospital/klinik',q:'["amenity"~"^(hospital|clinic)$"]',m:function(t){return t.amenity==='hospital'||t.amenity==='clinic'}},
  {id:'bengkel',e:'🔧',n:'Bengkel/tayar',q:'["shop"~"^(motorcycle_repair|car_repair|tyres|motorcycle)$"]',m:function(t){return ['motorcycle_repair','car_repair','tyres','motorcycle'].indexOf(t.shop)>=0}},
@@ -160,6 +286,7 @@ var LAYERS=[
  {id:'polis',e:'🚓',n:'Polis',q:'["amenity"="police"]',m:function(t){return t.amenity==='police'}},
  {id:'sekolah',e:'🏫',n:'Sekolah',q:'["amenity"="school"]',m:function(t){return t.amenity==='school'}}
 ];
+var PREF_NAME={fastest:'Terpantas',shortest:'Terpendek',recommended:'Seimbang',same:'Laluan sama'};
 
 /* ---------- teks arahan (Melayu / English) ---------- */
 var STEP_ARROW={0:'⬅',1:'➡',2:'↰',3:'↱',4:'↖',5:'↗',6:'⬆',7:'⟳',8:'⟳',9:'⤶',10:'🏁',11:'⬆',12:'↖',13:'↗'};
@@ -167,14 +294,16 @@ var TXT={
   ms:{
     types:{0:'Belok kiri',1:'Belok kanan',2:'Belok kiri tajam',3:'Belok kanan tajam',4:'Sedikit ke kiri',5:'Sedikit ke kanan',6:'Terus',7:'Masuk bulatan',8:'Keluar bulatan',9:'Pusingan U',10:'Anda sampai di destinasi',11:'Mulakan perjalanan',12:'Kekal di kiri',13:'Kekal di kanan'},
     onto:' ke ',exit:', ambil simpang ke-',
-    inD:function(d,t){return 'Dalam '+d+' meter, '+t},
-    start:'Mulakan perjalanan',arrive:'Anda sampai di destinasi',reroute:'Mengira semula laluan',test:'Ini suara arahan JOMAPZ. Dalam dua ratus meter, belok kiri ke Jalan Puchong.',tts:'ms-MY'
+    inD:function(d,t){return 'Dalam '+d+', '+t},
+    dist:function(m){return m>=1000?(Math.round(m/100)/10).toString().replace('.',',')+' kilometer':(Math.max(50,Math.round(m/50)*50))+' meter'},
+    start:'Mulakan perjalanan',arrive:'Anda sampai di destinasi',reroute:'Mengira semula laluan',cam:'Kamera laju di depan',test:'Ini suara arahan JOMAPZ. Dalam dua ratus meter, belok kiri ke Jalan Puchong.',tts:'ms-MY'
   },
   en:{
     types:{0:'Turn left',1:'Turn right',2:'Turn sharp left',3:'Turn sharp right',4:'Bear left',5:'Bear right',6:'Continue straight',7:'Enter the roundabout',8:'Exit the roundabout',9:'Make a U-turn',10:'You have arrived',11:'Start driving',12:'Keep left',13:'Keep right'},
     onto:' onto ',exit:', take exit ',
-    inD:function(d,t){return 'In '+d+' meters, '+t},
-    start:'Starting navigation',arrive:'You have arrived',reroute:'Recalculating',test:'This is the JOMAPZ voice. In two hundred meters, turn left onto Jalan Puchong.',tts:'en-US'
+    inD:function(d,t){return 'In '+d+', '+t},
+    dist:function(m){return m>=1000?(Math.round(m/100)/10)+' kilometers':(Math.max(50,Math.round(m/50)*50))+' meters'},
+    start:'Starting navigation',arrive:'You have arrived',reroute:'Recalculating',cam:'Speed camera ahead',test:'This is the JOMAPZ voice. In two hundred meters, turn left onto Jalan Puchong.',tts:'en-US'
   }
 };
 function tx(){return TXT[LANG]||TXT.ms}
@@ -186,11 +315,13 @@ function stepText(s){
   return t;
 }
 
-var map,meMarker,destMarker;
+var map,meMarker,destMarker,accEl;
 var me=null;
 var heading=null;
 var follow=true;
+var headingUp=true;
 var route=null;
+var routeOpts=[];
 var navActive=false;
 var destInfo=null;
 var wakeLock=null;
@@ -200,6 +331,12 @@ var lastReroute=0;
 var poiMarkers=[];
 var poiTimer=null;
 var poiCache={};
+var azPause=0;
+var refollowT=null;
+var navNext=null;
+var curProg=0;
+var rec=null;
+var prepBusy=false;
 
 function toast(msg,ms){
   var t=$('#toast');t.textContent=msg;t.hidden=false;
@@ -210,6 +347,12 @@ function haversine(lat1,lng1,lat2,lng2){
   var a=Math.sin((lat2-lat1)*p/2)*Math.sin((lat2-lat1)*p/2)+Math.cos(lat1*p)*Math.cos(lat2*p)*Math.sin((lng2-lng1)*p/2)*Math.sin((lng2-lng1)*p/2);
   return 2*R*Math.asin(Math.sqrt(a));
 }
+function bearingTo(lat1,lng1,lat2,lng2){
+  var p=Math.PI/180,y=Math.sin((lng2-lng1)*p)*Math.cos(lat2*p);
+  var x=Math.cos(lat1*p)*Math.sin(lat2*p)-Math.sin(lat1*p)*Math.cos(lat2*p)*Math.cos((lng2-lng1)*p);
+  return (Math.atan2(y,x)/p+360)%360;
+}
+function angDiff(a,b){return ((b-a+540)%360)-180}
 function fmtDist(m){
   if(m>=1000)return (m/1000).toFixed(m>=10000?0:1)+' km';
   return (Math.round(m/10)*10)+' m';
@@ -219,6 +362,13 @@ function fmtTime(s){
   if(m<60)return m+' min';
   return Math.floor(m/60)+' j '+(m%60)+' min';
 }
+function two(n){return (n<10?'0':'')+n}
+function clockStr(d){return two(d.getHours())+':'+two(d.getMinutes())}
+function malayClock(d){
+  var h=d.getHours(),m=d.getMinutes(),p=h<12?'pagi':h<14?'tengah hari':h<19?'petang':'malam';
+  var h12=h%12;if(h12===0)h12=12;
+  return h12+':'+two(m)+' '+p;
+}
 function escapeHtml(s){
   return String(s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]});
 }
@@ -227,23 +377,68 @@ function setMode(nav,prev){
   document.body.classList.toggle('prev',!!prev);
 }
 
+/* ---------- siang / malam ---------- */
+function sunTimes(date,lat,lng){
+  var rad=Math.PI/180,jd=date.getTime()/86400000+2440587.5;
+  var n=Math.ceil(jd-2451545.0+0.0008),Js=n+lng*-1/360;
+  var M=(357.5291+0.98560028*Js)%360;
+  var C=1.9148*Math.sin(M*rad)+0.02*Math.sin(2*M*rad)+0.0003*Math.sin(3*M*rad);
+  var L=(M+C+180+102.9372)%360;
+  var Jt=2451545.0+Js+0.0053*Math.sin(M*rad)-0.0069*Math.sin(2*L*rad);
+  var dec=Math.asin(Math.sin(L*rad)*Math.sin(23.4397*rad));
+  var cw=(Math.sin(-0.833*rad)-Math.sin(lat*rad)*Math.sin(dec))/(Math.cos(lat*rad)*Math.cos(dec));
+  if(cw>1)return {rise:NaN,set:NaN,polar:'night'};
+  if(cw<-1)return {rise:NaN,set:NaN,polar:'day'};
+  var w=Math.acos(cw)/rad;
+  var toMs=function(j){return (j-2440587.5)*86400000};
+  return {rise:toMs(Jt-w/360),set:toMs(Jt+w/360)};
+}
+function isNightNow(){
+  if(THEME==='night')return true;
+  if(THEME==='day')return false;
+  var lat=me?me.lat:3.139,lng=me?me.lng:101.687,now=new Date();
+  var st=sunTimes(now,lat,lng);
+  if(st.polar)return st.polar==='night';
+  var t=now.getTime();
+  /* tarikh tempatan mungkin beza hari dengan UTC; semak hari semalam/esok */
+  var prev=sunTimes(new Date(t-86400000),lat,lng),next=sunTimes(new Date(t+86400000),lat,lng);
+  var cands=[prev,st,next],i;
+  for(i=0;i<cands.length;i++){if(t>=cands[i].rise&&t<cands[i].set)return false}
+  return true;
+}
+function applyTheme(){document.body.classList.toggle('night',isNightNow())}
+
 /* ---------- peta ---------- */
+function makeMarker(){
+  var el=document.createElement('div');el.id='me';
+  el.innerHTML='<div id="acc"></div><svg viewBox="0 0 34 34"><path d="M17 3L29 30L17 24L5 30Z" fill="#a6e22e" stroke="#fff" stroke-width="5.5" stroke-linejoin="round"/><path d="M17 3L29 30L17 24L5 30Z" fill="#a6e22e" stroke="#0f1a05" stroke-width="2.4" stroke-linejoin="round"/></svg>';
+  return el;
+}
 function initMap(){
   map=new maplibregl.Map({
     container:'map',
     style:{version:8,sources:{osm:{type:'raster',tiles:['https://tile.openstreetmap.org/{z}/{x}/{y}.png'],tileSize:256,maxzoom:19,attribution:'© OpenStreetMap'}},layers:[{id:'osm',type:'raster',source:'osm'}]},
     center:[101.6869,3.139],zoom:11,attributionControl:false
   });
-  var el=document.createElement('div');el.id='me';
+  var el=makeMarker();accEl=el.querySelector('#acc');
   meMarker=new maplibregl.Marker({element:el,rotationAlignment:'map',pitchAlignment:'map'}).setLngLat([101.6869,3.139]);
   map.on('load',function(){
     map.addSource('route',{type:'geojson',data:{type:'FeatureCollection',features:[]}});
+    map.addSource('alts',{type:'geojson',data:{type:'FeatureCollection',features:[]}});
+    map.addLayer({id:'alt-line',type:'line',source:'alts',layout:{'line-cap':'round','line-join':'round'},paint:{'line-color':'#8a94a0','line-width':5,'line-opacity':.85}});
     map.addLayer({id:'route-casing',type:'line',source:'route',layout:{'line-cap':'round','line-join':'round'},paint:{'line-color':'#ffffff','line-width':10}});
     map.addLayer({id:'route-line',type:'line',source:'route',layout:{'line-cap':'round','line-join':'round'},paint:{'line-color':'#1a73e8','line-width':6}});
     schedulePOI();
   });
-  map.on('dragstart',function(){setFollow(false)});
+  map.on('dragstart',function(){
+    setFollow(false);
+    clearTimeout(refollowT);
+    if(navActive)refollowT=setTimeout(function(){setFollow(true)},8000);
+  });
+  map.on('zoomstart',function(e){if(e&&e.originalEvent)azPause=Date.now()+10000});
   map.on('moveend',schedulePOI);
+  map.on('rotate',updateCompass);
+  map.on('zoom',updateRing);
   var lpTimer=null;
   function cancelLP(){clearTimeout(lpTimer)}
   map.on('touchstart',function(e){
@@ -251,31 +446,60 @@ function initMap(){
     if(e.points&&e.points.length>1)return;
     lpTimer=setTimeout(function(){
       if(navActive)return;
-      setDestination(e.lngLat.lat,e.lngLat.lng,'Lokasi dipilih');
+      mapMenu(e.lngLat);
     },700);
   });
   map.on('touchend',cancelLP);
   map.on('touchmove',cancelLP);
   map.on('dragstart',cancelLP);
   map.on('zoomstart',cancelLP);
-  map.on('contextmenu',function(e){if(!navActive)setDestination(e.lngLat.lat,e.lngLat.lng,'Lokasi dipilih')});
+  map.on('contextmenu',function(e){if(!navActive)mapMenu(e.lngLat)});
+}
+function mapMenu(ll){
+  var pop=new maplibregl.Popup({offset:8,closeButton:true}).setLngLat(ll).setHTML('<b>Lokasi dipilih</b><button data-nav="1">Navigasi ke sini</button><button data-cam="1" style="background:#d93025">Tandakan kamera laju</button>').addTo(map);
+  var el=pop.getElement();
+  el.querySelector('[data-nav]').onclick=function(){pop.remove();setDestination(ll.lat,ll.lng,'Lokasi dipilih')};
+  el.querySelector('[data-cam]').onclick=function(){pop.remove();markCamera(ll.lat,ll.lng)};
+}
+function markCamera(lat,lng){
+  MYCAMS.push({lat:lat,lng:lng,t:Date.now()});
+  LS.set('myCams',MYCAMS);
+  toast('Kamera laju ditandakan. Akan muncul sebagai amaran di laluan.',3000);
+  if(map&&ACTIVE.indexOf('cam')>=0)schedulePOI();
 }
 function setFollow(v){
   follow=v;
   $('#btnLoc').style.color=v?'#1e8e3e':'';
 }
+function updateCompass(){
+  if(!map)return;
+  var b=map.getBearing(),btn=$('#btnNorth');
+  btn.hidden=!(navActive||Math.abs(b)>1);
+  btn.querySelector('svg').style.transform='rotate('+(-b)+'deg)';
+}
+function updateRing(){
+  if(!accEl||!me||!map)return;
+  var mpp=78271.517*Math.cos(me.lat*Math.PI/180)/Math.pow(2,map.getZoom());
+  var show=navActive?(me.acc>30):(me.acc>12);
+  if(!show||!mpp){accEl.style.display='none';return}
+  var d=Math.min(2*me.acc/mpp,600);
+  accEl.style.display='block';accEl.style.width=d+'px';accEl.style.height=d+'px';
+}
 
 /* ---------- GPS (berjalan di background bila navigasi) ---------- */
-var lastFix=null;
-var watchId=null,webWatch=null,watchSeq=0;
+var lastFix=null,lastHead=null;
+var watchId=null,webWatch=null,watchSeq=0,watchOn=false,watchBg=null;
 function stopWatch(){
   watchSeq++;
   if(watchId!==null&&BG){try{BG.removeWatcher({id:watchId})}catch(e){}}
   watchId=null;
   if(webWatch!==null){try{navigator.geolocation.clearWatch(webWatch)}catch(e){}webWatch=null}
+  watchOn=false;
 }
 function startWatch(bg){
+  if(watchOn&&watchBg===bg)return;
   stopWatch();
+  watchOn=true;watchBg=bg;
   var my=watchSeq;
   if(BG){
     var opts={requestPermissions:true,stale:false,distanceFilter:0};
@@ -303,24 +527,59 @@ function onPos(p){
     sp=0;
     if(lastFix){var dt=(t-lastFix.t)/1000;if(dt>0)sp=haversine(lastFix.lat,lastFix.lng,c.latitude,c.longitude)/dt}
   }
+  var hd=(c.heading!==null&&c.heading!==undefined&&!isNaN(c.heading))?c.heading:null;
+  if(!lastHead)lastHead={lat:c.latitude,lng:c.longitude};
+  else if(haversine(lastHead.lat,lastHead.lng,c.latitude,c.longitude)>=8){
+    if(hd===null)hd=bearingTo(lastHead.lat,lastHead.lng,c.latitude,c.longitude);
+    lastHead={lat:c.latitude,lng:c.longitude};
+  }
   var first=!me;
-  me={lat:c.latitude,lng:c.longitude,acc:c.accuracy,t:t};
-  lastFix={lat:c.latitude,lng:c.longitude,t:t};
-  if(c.heading!==null&&c.heading!==undefined&&!isNaN(c.heading)&&sp>1.5)heading=c.heading;
   var kmh=Math.round(sp*3.6);if(kmh<2)kmh=0;
+  me={lat:c.latitude,lng:c.longitude,acc:c.accuracy||0,t:t,sp:sp,kmh:kmh};
+  lastFix={lat:c.latitude,lng:c.longitude,t:t};
+  if(hd!==null&&sp>0.9){heading=heading===null?hd:(heading+0.45*angDiff(heading,hd)+360)%360}
   $('#spd').textContent=kmh;
   $('#roadCoord').textContent=me.lat.toFixed(5)+', '+me.lng.toFixed(5)+(me.acc?'  ±'+Math.round(me.acc)+' m':'');
   meMarker.setLngLat([me.lng,me.lat]);
   if(!meMarker._added){meMarker.addTo(map);meMarker._added=true}
   if(heading!==null)meMarker.setRotation(heading);
-  if(first){map.jumpTo({center:[me.lng,me.lat],zoom:15});setFollow(true)}
-  else if(follow){
-    var o={center:[me.lng,me.lat],duration:900,essential:true};
-    if(navActive&&heading!==null)o.bearing=heading;
-    map.easeTo(o);
-  }
+  updateRing();
+  if(first){map.jumpTo({center:[me.lng,me.lat],zoom:15});setFollow(true);applyTheme()}
+  else if(follow)camFollow();
   tick(kmh);
-  if(navActive&&route)updateNav();
+  if(navActive){recordPt();if(route)updateNav()}
+}
+
+/* ---------- kamera: ikut, putar, zoom automatik ---------- */
+var ZA=[[0,17.2],[30,16.6],[60,15.9],[90,15.3],[120,14.8],[150,14.7]];
+function baseZoom(kmh){
+  var i;
+  if(kmh<=ZA[0][0])return ZA[0][1];
+  for(i=1;i<ZA.length;i++){
+    if(kmh<=ZA[i][0]){var a=ZA[i-1],b=ZA[i];return a[1]+(b[1]-a[1])*(kmh-a[0])/(b[0]-a[0])}
+  }
+  return ZA[ZA.length-1][1];
+}
+function isTurn(t){return t===0||t===1||t===2||t===3||t===4||t===5||t===7||t===8||t===9||t===12||t===13}
+function targetZoom(){
+  var z=baseZoom(me.kmh)+ZOFF;
+  if(navNext&&isTurn(navNext.type)){
+    if(navNext.dist<400)z=Math.max(z,17);
+    else if(navNext.dist<1000)z=Math.max(z,16.2);
+  }
+  return Math.max(13.5,Math.min(18,z));
+}
+function camFollow(){
+  var o={center:[me.lng,me.lat],duration:900,essential:true};
+  if(navActive){
+    if(headingUp&&heading!==null&&me.kmh>=3)o.bearing=heading;
+    o.padding={top:Math.round(window.innerHeight*0.4),bottom:0,left:0,right:0};
+    if(AZ&&Date.now()>azPause){
+      var cz=map.getZoom(),tz=targetZoom();
+      if(Math.abs(tz-cz)>0.08)o.zoom=cz+(tz-cz)*(tz<cz?0.5:0.15);
+    }
+  }
+  map.easeTo(o);
 }
 
 /* ---------- nama jalan + had laju ---------- */
@@ -357,6 +616,15 @@ function wayDist(w,lat,lng){
   for(i=0;i<g.length-1;i++){var d=segDist(lat,lng,g[i],g[i+1]);if(d<best)best=d}
   return best;
 }
+function stepNameAt(prog){
+  if(!route||!route.steps)return '';
+  var nm='',i;
+  for(i=0;i<route.steps.length;i++){
+    var s=route.steps[i];
+    if(route.cum[s.way_points[0]]<=prog+1){if(s.name&&s.name!=='-')nm=s.name}else break;
+  }
+  return nm;
+}
 function lookupRoad(lat,lng){
   roadBusy=true;
   var ctl=('AbortController' in window)?new AbortController():null;
@@ -387,18 +655,28 @@ function lookupRoad(lat,lng){
     $('#roadName').textContent=roadText;
   })
   .catch(function(){
-    if(!roadText)$('#roadName').textContent='Nama jalan tidak tersedia (tiada internet?)';
+    var nm=navActive?stepNameAt(curProg):'';
+    if(nm){roadText=nm;$('#roadName').textContent=nm}
+    else if(!roadText)$('#roadName').textContent='Nama jalan tidak tersedia (tiada internet?)';
   })
   .then(function(){clearTimeout(to);roadBusy=false});
+}
+function shareText(text,title){
+  var done=function(){};
+  if(SH&&SH.share){SH.share({title:title,text:text,dialogTitle:title}).catch(done);return}
+  if(navigator.share){navigator.share({title:title,text:text}).catch(done);return}
+  try{navigator.clipboard.writeText(text);toast('Disalin')}catch(e){toast(text,6000)}
 }
 function shareLocation(){
   if(!me){toast('Menunggu GPS...');return}
   var lat=me.lat.toFixed(6),lng=me.lng.toFixed(6);
-  var text='Lokasi saya: '+(roadText||'jalan tidak diketahui')+' ('+lat+', '+lng+') https://maps.google.com/?q='+lat+','+lng;
-  var done=function(){};
-  if(SH&&SH.share){SH.share({title:'Lokasi saya',text:text,dialogTitle:'Kongsi lokasi'}).catch(done);return}
-  if(navigator.share){navigator.share({title:'Lokasi saya',text:text}).catch(done);return}
-  try{navigator.clipboard.writeText(text);toast('Lokasi disalin')}catch(e){toast(text,6000)}
+  shareText('Lokasi saya: '+(roadText||'jalan tidak diketahui')+' ('+lat+', '+lng+') https://maps.google.com/?q='+lat+','+lng,'Lokasi saya');
+}
+function shareEta(){
+  if(!me||!destInfo||!route){return}
+  var remain=Math.max(0,route.total-curProg),secs=route.dur*(route.total?remain/route.total:0);
+  var arr=new Date(Date.now()+secs*1000),lat=me.lat.toFixed(6),lng=me.lng.toFixed(6);
+  shareText('Saya dalam perjalanan ke '+destInfo.name+'. Sampai kira-kira '+malayClock(arr)+'. Lokasi semasa: https://maps.google.com/?q='+lat+','+lng,'Kongsi ETA');
 }
 
 /* ---------- POI ---------- */
@@ -461,6 +739,61 @@ function renderPOI(els,act){
     var m=new maplibregl.Marker({element:d}).setLngLat([lng,lat]).setPopup(popup).addTo(map);
     poiMarkers.push(m);
   });
+  if(ACTIVE.indexOf('cam')>=0){
+    MYCAMS.forEach(function(c,ci){
+      var d2=document.createElement('div');d2.className='poi';d2.textContent='📷';d2.style.borderColor='#d93025';
+      var pp=new maplibregl.Popup({offset:18,closeButton:false}).setHTML('<b>Kamera laju (tandaan saya)</b><button data-del="1" style="background:#d93025">Padam</button>');
+      pp.on('open',function(){
+        var bt=pp.getElement().querySelector('[data-del]');
+        if(bt)bt.onclick=function(){pp.remove();MYCAMS.splice(ci,1);LS.set('myCams',MYCAMS);schedulePOI()};
+      });
+      poiMarkers.push(new maplibregl.Marker({element:d2}).setLngLat([c.lng,c.lat]).setPopup(pp).addTo(map));
+    });
+  }
+}
+
+/* ---------- tempat disimpan ---------- */
+function savePlaces(){LS.set('places',PLACES)}
+function buildPlaces(){
+  var box=$('#places');box.innerHTML='';
+  function add(label,emoji,p,key,idx){
+    var b=document.createElement('button');b.className='chip';
+    b.innerHTML='<span>'+emoji+'</span><span>'+escapeHtml(label)+'</span>';
+    var lp=null,longHit=false;
+    b.addEventListener('touchstart',function(){longHit=false;lp=setTimeout(function(){longHit=true;delPlace(key,idx,label)},800)},{passive:true});
+    b.addEventListener('touchend',function(){clearTimeout(lp)});
+    b.addEventListener('touchmove',function(){clearTimeout(lp)});
+    b.onclick=function(){
+      if(longHit){longHit=false;return}
+      if(!p){toast('Cari tempat dulu, kemudian pilih "Simpan tempat ini sebagai..." di lembaran laluan',4500);return}
+      setDestination(p.lat,p.lng,p.n);
+    };
+    box.appendChild(b);
+  }
+  add('Rumah','🏠',PLACES.home,'home');
+  add('Kerja','💼',PLACES.work,'work');
+  (PLACES.fav||[]).forEach(function(f,i){add(f.n,'⭐',f,'fav',i)});
+}
+function delPlace(key,idx,label){
+  var ok=true;try{ok=window.confirm('Padam '+label+'?')}catch(e){}
+  if(!ok)return;
+  if(key==='fav')PLACES.fav.splice(idx,1);else PLACES[key]=null;
+  savePlaces();buildPlaces();toast('Dipadam');
+}
+function savePlaceAs(kind){
+  if(!destInfo||!kind)return;
+  var p={n:destInfo.name,lat:destInfo.lat,lng:destInfo.lng};
+  if(kind==='fav'){PLACES.fav=(PLACES.fav||[]).filter(function(f){return f.n!==p.n});PLACES.fav.push(p)}
+  else PLACES[kind]=p;
+  savePlaces();buildPlaces();
+  toast('Disimpan: '+p.n);
+}
+function nearestPlaceName(lat,lng){
+  var best=null,bd=400;
+  [['Rumah',PLACES.home],['Kerja',PLACES.work]].concat((PLACES.fav||[]).map(function(f){return [f.n,f]})).forEach(function(x){
+    if(!x[1])return;var d=haversine(lat,lng,x[1].lat,x[1].lng);if(d<bd){bd=d;best=x[0]}
+  });
+  return best;
 }
 
 /* ---------- carian ---------- */
@@ -489,29 +822,79 @@ function doSearch(){
 }
 
 /* ---------- laluan ---------- */
+function curAvoid(){
+  return {toll:VEH==='car'&&$('#avoidToll').checked,hwy:VEH==='moto'&&$('#avoidHwy').checked};
+}
 function setDestination(lat,lng,name){
   if(!me){toast('Menunggu GPS...');return}
   if(!KEY){openSettings();toast('Masukkan API key dulu');return}
   destInfo={lat:lat,lng:lng,name:name};
-  fetchRoute(me,destInfo,$('#avoidToll').checked).then(function(r){
-    route=r;
-    drawRoute(r);
-    if(destMarker)destMarker.remove();
-    destMarker=new maplibregl.Marker({color:'#d93025'}).setLngLat([lng,lat]).addTo(map);
-    $('#sName').textContent=name;
-    $('#sMeta').innerHTML=fmtTime(r.dur)+' <small>· '+fmtDist(r.dist)+'</small>';
-    $('#sheet').hidden=false;
-    $('#top').hidden=true;
-    setMode(false,true);
-    setFollow(false);
-    var bb=new maplibregl.LngLatBounds();
-    r.coords.forEach(function(c){bb.extend(c)});
-    map.fitBounds(bb,{padding:{top:80,bottom:260,left:40,right:40},duration:700});
+  $('#saveAs').value='';
+  toast('Mengira laluan...',9000);
+  getRoutes(me,destInfo).then(function(list){
+    toast('',1);$('#toast').hidden=true;
+    showOptions(list);
   }).catch(function(e){toast(e.message,4500)});
 }
-function fetchRoute(from,to,avoidToll){
-  var body={coordinates:[[from.lng,from.lat],[to.lng,to.lat]],instructions:true,language:'en',units:'m'};
-  if(avoidToll)body.options={avoid_features:['tollways']};
+function showOptions(list){
+  routeOpts=list;
+  var sel=0,i;
+  for(i=0;i<list.length;i++){if(list[i].labels.indexOf(PREF)>=0){sel=i;break}}
+  if(destMarker)destMarker.remove();
+  destMarker=new maplibregl.Marker({color:'#d93025'}).setLngLat([destInfo.lng,destInfo.lat]).addTo(map);
+  $('#sName').textContent=destInfo.name;
+  $('#vehNote').hidden=VEH!=='moto';
+  $('#rowToll').hidden=VEH!=='car';
+  $('#rowHwy').hidden=VEH!=='moto';
+  $('#sheet').hidden=false;$('#top').hidden=true;
+  setMode(false,true);setFollow(false);
+  map.setPadding({top:0,bottom:0,left:0,right:0});
+  selectOpt(sel,true);
+}
+function optLabel(r){return r.labels.map(function(l){return PREF_NAME[l]||l}).join(' · ')}
+function selectOpt(i,fit){
+  route=routeOpts[i];
+  var box=$('#opts');box.innerHTML='';
+  routeOpts.forEach(function(r,k){
+    var b=document.createElement('button');b.className='opt'+(k===i?' on':'');
+    var toll=VEH==='moto'?'Bebas tol':(r.hasToll?'Ada tol':'Tiada tol');
+    b.innerHTML='<div><b>'+escapeHtml(optLabel(r))+'</b><small>'+fmtDist(r.dist)+' · '+toll+'</small></div><span class="tm">'+fmtTime(r.dur)+'</span>';
+    b.onclick=function(){selectOpt(k,false)};
+    box.appendChild(b);
+  });
+  drawRoute(route);
+  var alts=routeOpts.filter(function(r,k){return k!==i}).map(function(r){return {type:'Feature',geometry:{type:'LineString',coordinates:r.coords},properties:{}}});
+  var src=map.getSource('alts');
+  if(src)src.setData({type:'FeatureCollection',features:alts});
+  if(fit){
+    var bb=new maplibregl.LngLatBounds();
+    routeOpts.forEach(function(r){r.coords.forEach(function(c){bb.extend(c)})});
+    map.fitBounds(bb,{padding:{top:80,bottom:Math.round(window.innerHeight*0.5),left:40,right:40},duration:700});
+  }
+}
+function getRoutes(from,to){
+  var prefs=['fastest','shortest','recommended'];
+  return Promise.all(prefs.map(function(p){
+    return fetchRoute([[from.lng,from.lat],[to.lng,to.lat]],p).then(function(r){r.labels=[p];return r}).catch(function(e){return {err:e}});
+  })).then(function(arr){
+    var ok=arr.filter(function(x){return !x.err});
+    if(!ok.length)throw arr[0].err;
+    var out=[];
+    ok.forEach(function(r){
+      var dup=null;
+      out.forEach(function(o){if(!dup&&Math.abs(o.dist-r.dist)/(o.dist||1)<0.01&&Math.abs(o.dur-r.dur)/(o.dur||1)<0.01)dup=o});
+      if(dup)dup.labels.push(r.labels[0]);else out.push(r);
+    });
+    return out;
+  });
+}
+function fetchRoute(coordinates,pref,polys){
+  var body={coordinates:coordinates,instructions:true,language:'en',units:'m',preference:pref||'fastest',extra_info:['tollways']};
+  var av=[],a=curAvoid();
+  if(a.toll)av.push('tollways');
+  if(a.hwy)av.push('highways');
+  if(av.length)body.options={avoid_features:av};
+  if(polys){body.options=body.options||{};body.options.avoid_polygons=polys}
   return fetch('https://api.openrouteservice.org/v2/directions/driving-car/geojson',{
     method:'POST',headers:{'Authorization':KEY,'Content-Type':'application/json'},body:JSON.stringify(body)
   }).then(function(r){
@@ -530,7 +913,9 @@ function fetchRoute(from,to,avoidToll){
     var steps=(f.properties.segments&&f.properties.segments[0]&&f.properties.segments[0].steps)||[];
     var cum=[0],i;
     for(i=1;i<coords.length;i++)cum.push(cum[i-1]+haversine(coords[i-1][1],coords[i-1][0],coords[i][1],coords[i][0]));
-    return {coords:coords,steps:steps,cum:cum,dist:f.properties.summary.distance,dur:f.properties.summary.duration,last:0,total:cum[cum.length-1]||f.properties.summary.distance};
+    var hasToll=false;
+    try{var tv=f.properties.extras.tollways.values;for(i=0;i<tv.length;i++){if(tv[i][2]===1)hasToll=true}}catch(e){}
+    return {coords:coords,steps:steps,cum:cum,dist:f.properties.summary.distance,dur:f.properties.summary.duration,last:0,total:cum[cum.length-1]||f.properties.summary.distance,hasToll:hasToll,events:[],labels:[pref||'fastest']};
   });
 }
 function drawRoute(r){
@@ -540,8 +925,316 @@ function drawRoute(r){
 function clearRoute(){
   var src=map.getSource('route');
   if(src)src.setData({type:'FeatureCollection',features:[]});
+  var a=map.getSource('alts');
+  if(a)a.setData({type:'FeatureCollection',features:[]});
   if(destMarker){destMarker.remove();destMarker=null}
-  route=null;
+  route=null;routeOpts=[];
+}
+
+/* ---------- data sepanjang laluan (kamera, R&R, tol, lampu isyarat) ---------- */
+function projectPt(R,lat,lng,a,b){
+  var kx=Math.cos(lat*Math.PI/180)*111320,ky=110540,best={d:1e12,prog:0},i;
+  a=Math.max(0,a);b=Math.min(R.coords.length-1,b);
+  for(i=a;i<b;i++){
+    var A=R.coords[i],B=R.coords[i+1];
+    var ax=(A[0]-lng)*kx,ay=(A[1]-lat)*ky,bx=(B[0]-lng)*kx,by=(B[1]-lat)*ky;
+    var dx=bx-ax,dy=by-ay,L2=dx*dx+dy*dy;
+    var t=L2?Math.max(0,Math.min(1,-(ax*dx+ay*dy)/L2)):0;
+    var px=ax+t*dx,py=ay+t*dy,d=Math.sqrt(px*px+py*py);
+    if(d<best.d)best={d:d,prog:R.cum[i]+t*(R.cum[i+1]-R.cum[i])};
+  }
+  return best;
+}
+function overpassPost(q){
+  return fetch(OVERPASS,{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:'data='+encodeURIComponent(q)})
+  .then(function(r){if(!r.ok)throw new Error('ov '+r.status);return r.json()});
+}
+function withRetry(fn){return fn().catch(function(){return new Promise(function(res){setTimeout(res,2000)}).then(fn)})}
+function prepareTrip(R){
+  var idx=[0],last=0,i;
+  for(i=1;i<R.coords.length;i++){if(R.cum[i]-R.cum[last]>=400){idx.push(i);last=i}}
+  if(idx[idx.length-1]!==R.coords.length-1)idx.push(R.coords.length-1);
+  var chunks=[],CH=70;
+  for(i=0;i<idx.length;i+=CH-1){
+    var part=idx.slice(i,i+CH);if(part.length<2)break;chunks.push(part);
+  }
+  var evs=[],fail=0;
+  function runChunk(part){
+    var P=part.map(function(k){return R.coords[k][1].toFixed(5)+','+R.coords[k][0].toFixed(5)}).join(',');
+    var q='[out:json][timeout:25];(node["highway"="speed_camera"](around:35,'+P+');node["highway"="traffic_signals"](around:25,'+P+');node["barrier"="toll_booth"](around:60,'+P+');nwr["highway"~"^(services|rest_area)$"](around:400,'+P+'););out center 800;';
+    var a=part[0]-3,b=part[part.length-1]+3;
+    return withRetry(function(){return overpassPost(q)}).then(function(j){
+      (j.elements||[]).forEach(function(el){
+        var t=el.tags||{};
+        var lat=el.lat!==undefined?el.lat:(el.center&&el.center.lat),lng=el.lon!==undefined?el.lon:(el.center&&el.center.lon);
+        if(lat===undefined||lng===undefined)return;
+        var k=null,maxD=50;
+        if(t.highway==='speed_camera'){k='aes';maxD=40}
+        else if(t.highway==='traffic_signals'){k='sig';maxD=30}
+        else if(t.barrier==='toll_booth'){k='toll';maxD=70}
+        else if(t.highway==='services'||t.highway==='rest_area'){k='rr';maxD=450}
+        if(!k)return;
+        var pj=projectPt(R,lat,lng,a,b);
+        if(pj.d>maxD)return;
+        evs.push({k:k,prog:pj.prog,lat:lat,lng:lng,name:t.name||t.operator||'',maxspeed:t.maxspeed||'',shown:{},dead:false});
+      });
+    }).catch(function(){fail++});
+  }
+  var p=Promise.resolve(),q2=chunks.slice();
+  function worker(){
+    var part=q2.shift();if(!part)return Promise.resolve();
+    return runChunk(part).then(worker);
+  }
+  p=Promise.all([worker(),worker()]);
+  R.closed=[];
+  return p.then(function(){
+    addMyCams(R,evs);
+    return Promise.all([prepLanes(R).catch(function(){}),prepIncidents(R,evs).catch(function(){})]);
+  }).then(function(){
+    evs.sort(function(a,b){return a.prog-b.prog});
+    var out=[],lastBy={};
+    evs.forEach(function(e){
+      var lb=lastBy[e.k];
+      var gap=e.k==='toll'?300:e.k==='rr'?800:e.k==='aes'?60:e.k==='inc'?150:30;
+      if(lb&&e.prog-lb.prog<gap){if(!lb.name&&e.name)lb.name=e.name;return}
+      lastBy[e.k]=e;out.push(e);
+    });
+    R.events=out;
+    return {ok:fail===0,partial:fail>0&&fail<chunks.length,fail:fail,total:chunks.length,count:out.length};
+  });
+}
+
+function addMyCams(R,evs){
+  MYCAMS.forEach(function(c){
+    var pj=projectPt(R,c.lat,c.lng,0,R.coords.length-1);
+    if(pj.d<=40)evs.push({k:'aes',prog:pj.prog,lat:c.lat,lng:c.lng,name:'Kamera laju',maxspeed:'',shown:{},dead:false});
+  });
+}
+
+/* ---------- panduan lorong (data OSM turn:lanes) ---------- */
+var WANT={0:['left','sharp_left'],1:['right','sharp_right'],2:['sharp_left','left'],3:['sharp_right','right'],4:['slight_left','left'],5:['slight_right','right'],9:['reverse'],12:['through','slight_left','merge_to_left','none',''],13:['through','slight_right','merge_to_right','none','']};
+var WANT_FB={0:['slight_left'],1:['slight_right'],4:['through'],5:['through']};
+function parseLanes(str){return String(str).split('|').map(function(s){return s.split(';').map(function(x){return x.trim()})})}
+function laneTags(t,dir){
+  var oneway=(t.oneway==='yes'||t.oneway==='1'||t.junction==='roundabout'),tl,cnt;
+  if(oneway){if(dir!=='f')return null;tl=t['turn:lanes']||t['turn:lanes:forward'];cnt=t.lanes||t['lanes:forward']}
+  else if(dir==='f'){tl=t['turn:lanes:forward'];cnt=t['lanes:forward']}
+  else{tl=t['turn:lanes:backward'];cnt=t['lanes:backward']}
+  if(!tl)return null;
+  var arr=parseLanes(tl);
+  if(arr.length<2)return null;
+  if(cnt&&parseInt(cnt,10)!==arr.length)return null;
+  return arr;
+}
+function wayApproach(w,lat,lng,B){
+  var g=w.geometry,best=1e9,bi=-1,i;
+  for(i=0;i<g.length-1;i++){var d=segDist(lat,lng,g[i],g[i+1]);if(d<best){best=d;bi=i}}
+  if(bi<0||best>25)return null;
+  var wb=bearingTo(g[bi].lat,g[bi].lon,g[bi+1].lat,g[bi+1].lon),df=Math.abs(angDiff(B,wb));
+  return {d:best,dir:df<=45?'f':(df>=135?'b':null)};
+}
+function matchLane(R,t,ways){
+  var wp=t.wp,pi=wp;
+  while(pi>0&&R.cum[wp]-R.cum[pi]<15)pi--;
+  if(pi===wp)return;
+  var B=bearingTo(R.coords[pi][1],R.coords[pi][0],t.lat,t.lng),best=null;
+  ways.forEach(function(w){
+    var m=wayApproach(w,t.lat,t.lng,B);if(!m||!m.dir)return;
+    var arr=laneTags(w.tags||{},m.dir);if(!arr)return;
+    if(!best||m.d<best.d)best={d:m.d,arr:arr};
+  });
+  if(!best)return;
+  var want=WANT[t.s.type].slice();
+  function calc(){return best.arr.map(function(ds){return ds.some(function(d){return want.indexOf(d)>=0})})}
+  var valid=calc();
+  if(!valid.some(Boolean)&&WANT_FB[t.s.type]){want=want.concat(WANT_FB[t.s.type]);valid=calc()}
+  if(!valid.some(Boolean))return;
+  if(valid.every(Boolean)&&(t.s.type===12||t.s.type===13))return;
+  t.s.lanes={arr:best.arr,valid:valid};
+}
+function prepLanes(R){
+  var targets=[];
+  (R.steps||[]).forEach(function(s){
+    if(WANT[s.type]&&s.way_points){var wp=s.way_points[0];targets.push({s:s,wp:wp,lat:R.coords[wp][1],lng:R.coords[wp][0]})}
+  });
+  if(!targets.length)return Promise.resolve();
+  var batches=[],i;
+  for(i=0;i<targets.length;i+=25)batches.push(targets.slice(i,i+25));
+  function run(b){
+    var parts=b.map(function(t){return 'way(around:25,'+t.lat.toFixed(6)+','+t.lng.toFixed(6)+')[highway][lanes];'}).join('');
+    return withRetry(function(){return overpassPost('[out:json][timeout:25];('+parts+');out tags geom;')}).then(function(j){
+      var ways=(j.elements||[]).filter(function(w){return w.geometry&&w.geometry.length>1});
+      b.forEach(function(t){matchLane(R,t,ways)});
+    }).catch(function(){});
+  }
+  function worker(){var b=batches.shift();return b?run(b).then(worker):Promise.resolve()}
+  return Promise.all([worker(),worker()]);
+}
+function laneSvg(dirs,ok){
+  var col=ok?'#0e5a2a':'#9aa3a0',has=function(list){return dirs.some(function(d){return list.indexOf(d)>=0})};
+  var S=has(['through','none','','merge_to_left','merge_to_right']),L=has(['left','sharp_left','slight_left']),Rr=has(['right','sharp_right','slight_right']),U=has(['reverse']);
+  var st='fill="none" stroke="'+col+'" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"',p='';
+  if(S)p+='<path d="M17 42V8M10 16L17 7L24 16" '+st+'/>';
+  if(L)p+='<path d="M17 36V28Q17 21 9 21H5M10 14L4 21L10 28" '+st+'/>';
+  if(Rr)p+='<path d="M17 36V28Q17 21 25 21H29M24 14L30 21L24 28" '+st+'/>';
+  if(U)p+='<path d="M22 42V16Q22 8 15 8Q8 8 8 16V22M3 18L8 25L13 18" '+st+'/>';
+  if(!p)p='<path d="M17 42V8M10 16L17 7L24 16" '+st+'/>';
+  return '<svg class="ln'+(ok?' ok':'')+'" viewBox="0 0 34 46">'+p+'</svg>';
+}
+var laneKey=null;
+function showLanes(key,lanes){
+  if(laneKey===key)return;
+  laneKey=key;
+  $('#lanes').innerHTML=lanes.arr.map(function(d,i){return laneSvg(d,lanes.valid[i])}).join('');
+  $('#lanes').hidden=false;document.body.classList.add('lanes');
+}
+function hideLanes(){
+  if(laneKey===null&&$('#lanes').hidden)return;
+  laneKey=null;$('#lanes').hidden=true;document.body.classList.remove('lanes');
+}
+
+/* ---------- jalan ditutup dan kerja jalan (TomTom, pilihan) ---------- */
+function splitBox(R,a,b){
+  var minLo=1e9,maxLo=-1e9,minLa=1e9,maxLa=-1e9,i,st=Math.max(1,Math.floor((b-a)/200));
+  for(i=a;i<=b;i+=st){var c=R.coords[i];if(c[0]<minLo)minLo=c[0];if(c[0]>maxLo)maxLo=c[0];if(c[1]<minLa)minLa=c[1];if(c[1]>maxLa)maxLa=c[1]}
+  var area=(maxLo-minLo)*111*Math.cos(((minLa+maxLa)/2)*Math.PI/180)*(maxLa-minLa)*111;
+  if(area>8000&&b-a>1){var m=(a+b)>>1;return splitBox(R,a,m).concat(splitBox(R,m,b))}
+  return [{a:a,b:b,box:[minLo-0.01,minLa-0.01,maxLo+0.01,maxLa+0.01]}];
+}
+function prepIncidents(R,evs){
+  if(!TTKEY||!SHOW.inc)return Promise.resolve();
+  var groups=splitBox(R,0,R.coords.length-1);
+  var fields='{incidents{type,geometry{type,coordinates},properties{iconCategory,events{description},from,to,roadNumbers}}}';
+  return Promise.all(groups.map(function(g){
+    var u='https://api.tomtom.com/traffic/services/5/incidentDetails?key='+encodeURIComponent(TTKEY)+'&bbox='+g.box.map(function(v){return v.toFixed(5)}).join(',')+'&fields='+encodeURIComponent(fields)+'&language=en-GB&categoryFilter=8,9&timeValidityFilter=present';
+    return fetch(u).then(function(r){if(!r.ok)throw new Error('tt '+r.status);return r.json()}).then(function(j){
+      (j.incidents||[]).forEach(function(inc){
+        var gm=inc.geometry||{},cs=gm.type==='Point'?[gm.coordinates]:(gm.coordinates||[]);
+        var pr=inc.properties||{},closed=pr.iconCategory===8,best=null;
+        cs.forEach(function(c){
+          var pj=projectPt(R,c[1],c[0],g.a-5,g.b+5);
+          if(pj.d<=35&&(!best||pj.d<best.d))best={d:pj.d,prog:pj.prog,c:c};
+        });
+        if(!best)return;
+        var desc=(pr.events&&pr.events[0]&&pr.events[0].description)||(closed?'Jalan ditutup':'Kerja jalan');
+        if(closed&&!/tutup|clos/i.test(desc))desc='Jalan ditutup: '+desc;
+        evs.push({k:'inc',prog:best.prog,lat:best.c[1],lng:best.c[0],name:desc,closed:closed,shown:{},dead:false});
+        if(closed)R.closed.push(cs);
+      });
+    }).catch(function(){R.incFail=true});
+  }));
+}
+function closurePolys(list){
+  return {type:'MultiPolygon',coordinates:list.map(function(cs){
+    var minLo=1e9,maxLo=-1e9,minLa=1e9,maxLa=-1e9;
+    cs.forEach(function(c){if(c[0]<minLo)minLo=c[0];if(c[0]>maxLo)maxLo=c[0];if(c[1]<minLa)minLa=c[1];if(c[1]>maxLa)maxLa=c[1]});
+    var e=0.0005;minLo-=e;maxLo+=e;minLa-=e;maxLa+=e;
+    return [[[minLo,minLa],[maxLo,minLa],[maxLo,maxLa],[minLo,maxLa],[minLo,minLa]]];
+  })};
+}
+
+/* ---------- simpan peta di hadapan (supaya tahan bila internet putus) ---------- */
+var warmed={},warmQ=[],warmBusy=0,warmT=0;
+function tileXY(lat,lng,z){
+  var n=Math.pow(2,z),r=lat*Math.PI/180;
+  return [Math.floor((lng+180)/360*n),Math.floor((1-Math.log(Math.tan(r)+1/Math.cos(r))/Math.PI)/2*n)];
+}
+function pumpWarm(){
+  while(warmBusy<2&&warmQ.length){
+    var u=warmQ.shift();warmBusy++;
+    fetch(u,{mode:'no-cors'}).catch(function(){}).then(function(){warmBusy--;setTimeout(pumpWarm,80)});
+  }
+}
+function warmAhead(){
+  if(!navActive||!route||navigator.onLine===false)return;
+  var now=Date.now();if(now-warmT<20000)return;warmT=now;
+  var end=curProg+12000,next=curProg,add=0,i;
+  for(i=Math.max(0,route.last-2);i<route.coords.length;i++){
+    var cm=route.cum[i];
+    if(cm>end||add>400)break;
+    if(cm<next)continue;
+    next=cm+250;
+    var c=route.coords[i];
+    [14,15,16].forEach(function(z){
+      var t=tileXY(c[1],c[0],z),dx,dy;
+      for(dx=-1;dx<=1;dx++)for(dy=-1;dy<=1;dy++){
+        var k=z+'/'+(t[0]+dx)+'/'+(t[1]+dy);
+        if(!warmed[k]){warmed[k]=1;warmQ.push('https://tile.openstreetmap.org/'+k+'.png');add++}
+      }
+    });
+  }
+  pumpWarm();
+}
+
+/* ---------- chip amaran dengan pemasa ---------- */
+var CH_TH={aes:[1000,300],rr:[5000,1000],toll:[3000,1000],sig:[300],inc:[2000,500]};
+var chipLive=[];
+function tollPrice(name){
+  if(!name||!TOL.plazas)return null;
+  var n=name.toLowerCase(),i,j;
+  for(i=0;i<TOL.plazas.length;i++){
+    var p=TOL.plazas[i];
+    for(j=0;j<(p.k||[]).length;j++){if(n.indexOf(p.k[j])>=0)return p}
+  }
+  return null;
+}
+function chipText(ev,dist){
+  var d=fmtDist(dist);
+  if(ev.k==='aes')return 'Kamera laju '+d+(ev.maxspeed&&parseInt(ev.maxspeed,10)?' · had '+parseInt(ev.maxspeed,10):'');
+  if(ev.k==='sig')return 'Lampu isyarat '+d;
+  if(ev.k==='inc')return ev.name+' · '+d;
+  if(ev.k==='rr'){var nm=ev.name||'R&R';if(!/r&r|rehat/i.test(nm))nm='R&R '+nm;return nm+' · '+d}
+  var nm2=ev.name?(/tol/i.test(ev.name)?ev.name:'Tol '+ev.name):'Plaza tol';
+  var tail='';
+  if(VEH==='moto')tail=' · Bebas tol';
+  else{var pr=tollPrice(ev.name);if(pr&&pr.c1)tail=' · RM '+Number(pr.c1).toFixed(2)}
+  return nm2+' · '+d+tail;
+}
+function showChip(ev,dist){
+  var box=$('#cn');
+  var ex=null;
+  chipLive.forEach(function(c){if(c.ev.k===ev.k&&ev.k==='sig')ex=c});
+  var secs=(ev.k==='aes'?CHIPSEC+3:CHIPSEC)*1000;
+  if(ex){ex.ev=ev;ex.until=Date.now()+secs;ex.tx.textContent=chipText(ev,dist);return}
+  var el=document.createElement('div');el.className='cc '+ev.k;
+  var icon={aes:'📷',rr:'🅿',toll:'🛣',sig:'🚦',inc:'🚧'}[ev.k];
+  el.innerHTML='<span class="ci">'+icon+'</span><span class="ct"></span>';
+  var tx2=el.querySelector('.ct');tx2.textContent=chipText(ev,dist);
+  var c={el:el,ev:ev,tx:tx2,until:Date.now()+secs};
+  if(ev.k!=='aes'){
+    var x=document.createElement('button');x.className='cx';x.textContent='×';x.setAttribute('aria-label','Tutup');
+    x.onclick=function(){ev.dead=true;removeChip(c)};
+    el.appendChild(x);
+  }
+  box.appendChild(el);chipLive.push(c);
+}
+function removeChip(c){
+  var i=chipLive.indexOf(c);if(i>=0)chipLive.splice(i,1);
+  c.el.classList.add('out');
+  setTimeout(function(){if(c.el.parentNode)c.el.parentNode.removeChild(c.el)},450);
+}
+function clearChips(){chipLive.slice().forEach(function(c){if(c.el.parentNode)c.el.parentNode.removeChild(c.el)});chipLive=[]}
+function updateChips(prog){
+  if(!route||!route.events)return;
+  var now=Date.now(),evs=route.events,i;
+  chipLive.slice().forEach(function(c){
+    var d=c.ev.prog-prog;
+    if(d<-30||now>c.until)removeChip(c);
+    else c.tx.textContent=chipText(c.ev,Math.max(0,d));
+  });
+  var key={aes:'aes',rr:'rr',sig:'sig',toll:'toll',inc:'inc'};
+  for(i=0;i<evs.length;i++){
+    var ev=evs[i],d=ev.prog-prog;
+    if(d<0)continue;
+    if(d>5000)break;
+    if(ev.dead||!SHOW[key[ev.k]])continue;
+    var th=CH_TH[ev.k],j,hit=-1;
+    for(j=th.length-1;j>=0;j--){if(d<=th[j]){hit=j;break}}
+    if(hit<0||ev.shown[hit])continue;
+    for(j=0;j<=hit;j++)ev.shown[j]=true;
+    showChip(ev,d);
+    if(ev.k==='aes'&&hit===0)speak(tx().cam);
+  }
 }
 
 /* ---------- navigasi ---------- */
@@ -564,36 +1257,132 @@ function project(lat,lng){
   R.last=best.i||0;
   return best;
 }
+function showPrep(show){$('#prep').hidden=!show}
+function beginTrip(){
+  if(!route||prepBusy)return;
+  prepBusy=true;
+  $('#p2').textContent='⏳';$('#p3').textContent='⏳';$('#pNote').textContent='Selepas ini navigasi terus berjalan walaupun internet terputus. Peta yang belum dilihat mungkin kosong tanpa internet.';
+  showPrep(true);
+  var voiceP;
+  if(TTS&&TTS.isLanguageSupported){
+    voiceP=TTS.isLanguageSupported({lang:tx().tts}).then(function(r){return !(r&&r.supported===false)}).catch(function(){return true});
+  }else voiceP=Promise.resolve(true);
+  voiceP.then(function(ok){$('#p3').textContent=ok?'✅':'⚠️';if(!ok)$('#pNote').textContent='Suara belum dipasang. Buka Tetapan, tekan "Pasang suara".'});
+  var timeout=new Promise(function(res){setTimeout(function(){res({ok:false,timeout:true})},40000)});
+  Promise.race([prepareTrip(route),timeout]).then(function(r){
+    $('#p2').textContent=r.ok?'✅':(r.partial?'⚠️':'❌');
+    if(!r.ok)toast('Sebahagian data sepanjang laluan tak dapat dimuat. Navigasi tetap berjalan.',4500);
+    return avoidClosures().then(function(){return voiceP});
+  }).catch(function(){$('#p2').textContent='❌'}).then(function(){
+    setTimeout(function(){prepBusy=false;showPrep(false);startNav()},700);
+  });
+}
+function avoidClosures(){
+  if(!route||!route.closed||!route.closed.length||route.retried||(route.labels&&route.labels[0]==='same'))return Promise.resolve();
+  $('#pNote').textContent='Jalan ditutup di laluan. Mencari laluan lain...';
+  var pref=(route.labels&&route.labels[0])||'fastest';
+  return fetchRoute([[me.lng,me.lat],[destInfo.lng,destInfo.lat]],pref,closurePolys(route.closed)).then(function(r){
+    r.labels=[pref];r.retried=true;route=r;drawRoute(r);
+    toast('Laluan ditukar untuk elak jalan ditutup',4000);
+    return prepareTrip(r).catch(function(){});
+  }).catch(function(){toast('Tiada laluan lain. Jalan ditutup mungkin di laluan kau.',5000)});
+}
 function startNav(){
   if(!route)return;
-  navActive=true;spoken={};offCount=0;route.last=0;
+  navActive=true;spoken={};offCount=0;route.last=0;curProg=0;navNext=null;headingUp=true;azPause=0;
+  warmed={};warmQ=[];warmT=0;laneKey=null;
+  $('#btnCam').hidden=false;
+  persistTrip();
+  clearChips();
   $('#sheet').hidden=true;$('#top').hidden=true;
   $('#banner').hidden=false;$('#navbar').hidden=false;
   setMode(true,false);
   setFollow(true);
   startWatch(true);
   keepScreenOn(true);
-  map.easeTo({center:[me.lng,me.lat],zoom:17,pitch:45,duration:800});
+  startRec();
+  updateCompass();
+  map.easeTo({center:[me.lng,me.lat],zoom:AZ?targetZoomNow():17,pitch:45,padding:{top:Math.round(window.innerHeight*0.4),bottom:0,left:0,right:0},duration:800});
   speak(tx().start);
   updateNav();
 }
+/* ---------- kekal berjalan, matikan, sambung perjalanan ---------- */
+function persistTrip(){
+  if(!route||!destInfo)return;
+  LS.set('activeTrip',{t:Date.now(),dest:destInfo,veh:VEH,route:{
+    coords:route.coords.map(function(c){return [Math.round(c[0]*1e6)/1e6,Math.round(c[1]*1e6)/1e6]}),
+    steps:route.steps,dist:route.dist,dur:route.dur,hasToll:route.hasToll,events:route.events||[],labels:route.labels||['fastest']
+  }});
+}
+function clearTrip(){LS.set('activeTrip',null)}
+function restoreTrip(){
+  if(navActive)return;
+  var a=LS.get('activeTrip',null);
+  if(!a||!a.route||Date.now()-a.t>6*3600*1000)return;
+  $('#resumeTxt').textContent='Ke '+(a.dest&&a.dest.name?a.dest.name:'destinasi')+'. Perjalanan terakhir terhenti. Sambung dari lokasi sekarang?';
+  $('#resume').hidden=false;
+}
+function resumeTrip(){
+  var a=LS.get('activeTrip',null);
+  $('#resume').hidden=true;
+  if(!a||!a.route){return}
+  var r=a.route,cum=[0],i;
+  for(i=1;i<r.coords.length;i++)cum.push(cum[i-1]+haversine(r.coords[i-1][1],r.coords[i-1][0],r.coords[i][1],r.coords[i][0]));
+  (r.events||[]).forEach(function(e){e.shown={};e.dead=false});
+  route={coords:r.coords,steps:r.steps,cum:cum,dist:r.dist,dur:r.dur,last:0,total:cum[cum.length-1]||r.dist,hasToll:r.hasToll,events:r.events||[],labels:r.labels||['fastest'],retried:true};
+  destInfo=a.dest;VEH=a.veh||VEH;
+  var tries=0;
+  (function wait(){
+    if(me){
+      drawRoute(route);
+      if(destMarker)destMarker.remove();
+      destMarker=new maplibregl.Marker({color:'#d93025'}).setLngLat([destInfo.lng,destInfo.lat]).addTo(map);
+      startNav();
+    }else if(tries++<60){toast('Menunggu GPS...',1500);setTimeout(wait,500)}
+    else toast('GPS tak ditemui')
+  })();
+}
+function shutdownApp(){
+  var ok=true;try{ok=window.confirm('Matikan JOMAPZ sepenuhnya? Navigasi, GPS dan suara akan berhenti.')}catch(e){}
+  if(!ok)return;
+  if(navActive){navActive=false;saveTrip()}
+  stopWatch();keepScreenOn(false);stopSpeak();
+  setTimeout(function(){
+    try{if(APP&&APP.exitApp){APP.exitApp();return}}catch(e){}
+    try{window.close()}catch(e){}
+    toast('Tutup app secara manual',3000);
+  },150);
+}
+var splashT0=Date.now();
+function hideSplash(){var s=$('#splash');if(!s||s._h)return;s._h=1;s.classList.add('out');setTimeout(function(){if(s.parentNode)s.parentNode.removeChild(s)},700)}
+function splashReady(){setTimeout(hideSplash,Math.max(0,1600-(Date.now()-splashT0)))}
+function targetZoomNow(){return Math.max(13.5,Math.min(18,baseZoom(me?me.kmh:0)+ZOFF))}
 function endNav(){
+  var wasRec=rec;
   navActive=false;
+  saveTrip();
   $('#banner').hidden=true;$('#navbar').hidden=true;$('#sheet').hidden=true;$('#top').hidden=false;
+  clearChips();
   setMode(false,false);
   clearRoute();
   keepScreenOn(false);
-  startWatch(false);
+  startWatch(ALWAYS);
   stopSpeak();
-  map.easeTo({pitch:0,bearing:0,duration:600});
+  clearTrip();
+  $('#btnCam').hidden=true;
+  hideLanes();
+  map.easeTo({pitch:0,bearing:0,padding:{top:0,bottom:0,left:0,right:0},duration:600});
   setFollow(true);
+  updateCompass();updateRing();
+  if(wasRec&&TRIPS.length)toast('Perjalanan disimpan dalam Rekod',3000);
 }
 function updateNav(){
   if(!route||!me)return;
   var pr=project(me.lat,me.lng);
+  curProg=pr.prog;
   var remain=Math.max(0,route.total-pr.prog);
   var secs=route.dur*(route.total?remain/route.total:0);
-  $('#eta').innerHTML=fmtTime(secs)+'<small>'+fmtDist(remain)+'</small>';
+  $('#eta').innerHTML=fmtTime(secs)+'<small>'+fmtDist(remain)+' · tiba '+clockStr(new Date(Date.now()+secs*1000))+'</small>';
   if(pr.d>50){
     offCount++;
     if(offCount>=3&&Date.now()-lastReroute>12000){doReroute();return}
@@ -610,25 +1399,108 @@ function updateNav(){
     if(route.cum[steps[i].way_points[0]]<=pr.prog+1)s=i;else break;
   }
   var nxt=steps[s+1];
-  if(!nxt)return;
-  var dist=route.cum[nxt.way_points[0]]-pr.prog;if(dist<0)dist=0;
-  var text=stepText(nxt);
-  $('#bArrow').textContent=STEP_ARROW[nxt.type]||'⬆';
-  $('#bDist').textContent=fmtDist(dist);
-  $('#bText').textContent=text;
-  var levels=[60,200,500],key=s+1,hit=null;
-  for(i=0;i<levels.length;i++){if(dist<=levels[i]){hit=levels[i];break}}
-  if(hit&&!spoken[key+'_'+hit]){
-    levels.forEach(function(l){if(l>=hit)spoken[key+'_'+l]=true});
-    speak(hit===60?text:tx().inD(hit,text));
+  if(nxt){
+    var dist=route.cum[nxt.way_points[0]]-pr.prog;if(dist<0)dist=0;
+    var text=stepText(nxt);
+    navNext={dist:dist,type:nxt.type};
+    if(nxt.lanes&&dist<=800)showLanes(s+1,nxt.lanes);else hideLanes();
+    $('#bArrow').textContent=STEP_ARROW[nxt.type]||'⬆';
+    $('#bDist').textContent=fmtDist(dist);
+    $('#bText').textContent=text;
+    var v=Math.max(me.sp||0,4.2);
+    var th=[Math.max(25*v,300),Math.max(10*v,120),Math.max(4*v,50)];
+    var key=s+1,idx=-1;
+    for(i=0;i<3;i++){if(dist<=th[i])idx=i}
+    if(idx>=0&&!spoken[key+'_'+idx]){
+      for(i=0;i<=idx;i++)spoken[key+'_'+i]=true;
+      speak(idx===2?text:tx().inD(tx().dist(dist),text));
+    }
   }
+  if(!nxt)hideLanes();
+  updateChips(pr.prog);
+  warmAhead();
 }
 function doReroute(){
   lastReroute=Date.now();offCount=0;
   speak(tx().reroute);
-  fetchRoute(me,destInfo,$('#avoidToll').checked).then(function(r){
-    route=r;spoken={};drawRoute(r);
+  var pref=(route&&route.labels&&route.labels[0]!=='same')?route.labels[0]:'fastest';
+  fetchRoute([[me.lng,me.lat],[destInfo.lng,destInfo.lat]],pref).then(function(r){
+    r.labels=[pref];
+    route=r;spoken={};navNext=null;drawRoute(r);clearChips();
+    prepareTrip(r).catch(function(){}).then(persistTrip);
   }).catch(function(e){toast(e.message)});
+}
+
+/* ---------- rekod perjalanan ---------- */
+function startRec(){
+  rec={t0:Date.now(),pts:[],from:nearestPlaceName(me.lat,me.lng)||(roadText||'Lokasi saya'),dist:0};
+  rec.pts.push([me.lat,me.lng,Date.now(),me.kmh]);
+}
+function recordPt(){
+  if(!rec)return;
+  var l=rec.pts[rec.pts.length-1],d=haversine(l[0],l[1],me.lat,me.lng);
+  if(d>=30||(Date.now()-l[2]>10000&&d>=8)){
+    rec.dist+=d;rec.pts.push([me.lat,me.lng,Date.now(),me.kmh]);
+    if(rec.pts.length>6000)rec.pts.splice(1,1);
+  }
+}
+function thin(pts,max){
+  if(pts.length<=max)return pts;
+  var out=[],step=(pts.length-1)/(max-1),i;
+  for(i=0;i<max;i++)out.push(pts[Math.round(i*step)]);
+  return out;
+}
+function saveTrip(){
+  var r=rec;rec=null;
+  if(!r||r.pts.length<4||r.dist<300)return;
+  var end=r.pts[r.pts.length-1];
+  var sp=r.pts.map(function(p){return p[3]||0});
+  var trip={id:r.t0,from:r.from,to:(destInfo&&destInfo.name)||'Destinasi',t0:r.t0,t1:end[2],dist:r.dist,max:Math.max.apply(null,sp),pts:thin(r.pts,600).map(function(p){return [Math.round(p[0]*1e5)/1e5,Math.round(p[1]*1e5)/1e5,p[2]]})};
+  TRIPS.unshift(trip);
+  if(TRIPS.length>25)TRIPS.length=25;
+  LS.set('trips',TRIPS);
+}
+var DAYS=['Ahd','Isn','Sel','Rab','Kha','Jum','Sab'],MONTHS=['Jan','Feb','Mac','Apr','Mei','Jun','Jul','Ogo','Sep','Okt','Nov','Dis'];
+function tripWhen(t){var d=new Date(t);return DAYS[d.getDay()]+' '+d.getDate()+' '+MONTHS[d.getMonth()]+', '+malayClock(d)}
+function openTrips(){
+  $('#tripDetail').hidden=true;$('#tripList').hidden=false;
+  var box=$('#tripList');box.innerHTML='';
+  if(!TRIPS.length)box.innerHTML='<p class="note">Belum ada perjalanan. Selepas navigasi tamat, ia disimpan di sini.</p>';
+  TRIPS.forEach(function(t,i){
+    var b=document.createElement('button');b.className='trip';
+    b.innerHTML='<b>'+escapeHtml(t.from)+' ke '+escapeHtml(t.to)+'</b><small>'+tripWhen(t.t0)+' · '+fmtDist(t.dist)+' · '+fmtTime((t.t1-t.t0)/1000)+'</small>';
+    b.onclick=function(){tripDetail(i)};
+    box.appendChild(b);
+  });
+  $('#trips').hidden=false;
+}
+function tripDetail(i){
+  var t=TRIPS[i],box=$('#tripDetail');
+  $('#tripList').hidden=true;box.hidden=false;
+  var avg=Math.round(t.dist/Math.max(1,(t.t1-t.t0)/1000)*3.6);
+  box.innerHTML='<h4 style="margin-top:0">'+escapeHtml(t.from)+' ke '+escapeHtml(t.to)+'</h4><p class="note">'+tripWhen(t.t0)+'<br>Jarak '+fmtDist(t.dist)+' · Masa '+fmtTime((t.t1-t.t0)/1000)+' · Purata '+avg+' km/j · Laju tertinggi '+Math.round(t.max)+' km/j</p><div class="row"><button class="btn p" id="tRepeat">Ulang laluan ini</button></div><div class="row"><button class="btn s" id="tBack">Kembali</button><button class="btn s" id="tDel">Padam</button></div>';
+  $('#tBack').onclick=openTrips;
+  $('#tDel').onclick=function(){TRIPS.splice(i,1);LS.set('trips',TRIPS);openTrips()};
+  $('#tRepeat').onclick=function(){repeatTrip(t)};
+}
+function repeatTrip(t){
+  if(!me){toast('Menunggu GPS...');return}
+  if(!KEY){openSettings();toast('Masukkan API key dulu');return}
+  var pts=t.pts,bi=0,bd=1e12,i;
+  for(i=0;i<pts.length;i++){var d=haversine(me.lat,me.lng,pts[i][0],pts[i][1]);if(d<bd){bd=d;bi=i}}
+  var rest=pts.slice(bi);
+  if(rest.length<2){toast('Anda sudah hampir di penghujung laluan itu');return}
+  var wp=thin(rest,Math.min(20,rest.length)),coords=[[me.lng,me.lat]];
+  wp.forEach(function(p){coords.push([p[1],p[0]])});
+  var last=pts[pts.length-1];
+  destInfo={lat:last[0],lng:last[1],name:t.to};
+  $('#trips').hidden=true;
+  toast('Mengira laluan sama...',9000);
+  fetchRoute(coords,'fastest').then(function(r){
+    r.labels=['same'];
+    $('#toast').hidden=true;
+    showOptions([r]);
+  }).catch(function(e){toast(e.message,4500)});
 }
 
 /* ---------- suara ---------- */
@@ -663,13 +1535,29 @@ document.addEventListener('visibilitychange',function(){
 /* ---------- tetapan ---------- */
 function openSettings(){
   $('#keyIn').value=KEY;$('#swVoice').checked=VOICE;$('#swDim').checked=DIM;$('#selLang').value=LANG;
+  $('#selVeh').value=VEH;$('#selPref').value=PREF;$('#swHwy').checked=HWY;
+  $('#selTheme').value=THEME;$('#swAZ').checked=AZ;$('#selZ').value=String(ZOFF);
+  $('#swAes').checked=!!SHOW.aes;$('#swRr').checked=!!SHOW.rr;$('#swSig').checked=!!SHOW.sig;$('#swToll').checked=!!SHOW.toll;
+  $('#selChip').value=String(CHIPSEC);
+  $('#swInc').checked=!!SHOW.inc;$('#ttKey').value=TTKEY;$('#swAlways').checked=ALWAYS;
+  $('#tolNote').textContent=TOL.updated?('Harga tol rujukan dikemas kini: '+TOL.updated+(TOL.source?'. Sumber: '+TOL.source:'')+'. Semak papan tanda tol untuk harga sebenar.'):'Jadual harga tol belum diisi.';
   $('#settings').hidden=false;
 }
 function closeSettings(){$('#settings').hidden=true}
 function saveSettings(){
   KEY=$('#keyIn').value.trim();VOICE=$('#swVoice').checked;DIM=$('#swDim').checked;LANG=$('#selLang').value;
+  VEH=$('#selVeh').value;PREF=$('#selPref').value;HWY=$('#swHwy').checked;
+  THEME=$('#selTheme').value;AZ=$('#swAZ').checked;ZOFF=parseFloat($('#selZ').value)||0;
+  SHOW={aes:$('#swAes').checked,rr:$('#swRr').checked,sig:$('#swSig').checked,toll:$('#swToll').checked,inc:$('#swInc').checked};
+  CHIPSEC=parseInt($('#selChip').value,10)||5;
+  TTKEY=$('#ttKey').value.trim();LS.set('ttKey',TTKEY);
+  var al=$('#swAlways').checked;LS.set('always',al);
+  if(al!==ALWAYS){ALWAYS=al;if(!navActive)startWatch(ALWAYS)}
   LS.set('orsKey',KEY);LS.set('voice',VOICE);LS.set('dim',DIM);LS.set('lang',LANG);
+  LS.set('veh',VEH);LS.set('pref',PREF);LS.set('avoidHwy',HWY);LS.set('theme',THEME);LS.set('az',AZ);LS.set('zoff',ZOFF);LS.set('show',SHOW);LS.set('chipsec',CHIPSEC);
   if(!DIM)document.documentElement.style.setProperty('--dim','1');
+  $('#avoidHwy').checked=HWY;
+  applyTheme();
   closeSettings();toast('Disimpan');
 }
 function testVoice(){
@@ -690,30 +1578,71 @@ function installVoice(){
 
 /* ---------- mula ---------- */
 document.addEventListener('DOMContentLoaded',function(){
+  fetch('tol.json').then(function(r){return r.ok?r.json():null}).then(function(j){if(j&&j.plazas)TOL=j}).catch(function(){});
+  applyTheme();
+  setInterval(applyTheme,60000);
   buildChips();
+  buildPlaces();
   initMap();
+  $('#avoidHwy').checked=HWY;
   $('#goSearch').onclick=doSearch;
   $('#q').addEventListener('keydown',function(e){if(e.key==='Enter')doSearch()});
   $('#q').addEventListener('input',function(){if(!$('#q').value)$('#results').hidden=true});
   $('#btnLoc').onclick=function(){
     if(!me){toast('Menunggu GPS...');return}
-    setFollow(true);
-    map.easeTo({center:[me.lng,me.lat],zoom:Math.max(map.getZoom(),15),duration:600});
+    setFollow(true);azPause=0;
+    if(navActive)camFollow();else map.easeTo({center:[me.lng,me.lat],zoom:Math.max(map.getZoom(),15),duration:600});
+  };
+  $('#btnNorth').onclick=function(){
+    if(navActive){
+      headingUp=!headingUp;
+      if(!headingUp){map.easeTo({bearing:0,duration:500});toast('Utara di atas',1800)}
+      else{toast('Arah perjalanan di atas',1800);if(me&&follow)camFollow()}
+    }else map.easeTo({bearing:0,duration:500});
   };
   $('#btnSet').onclick=openSettings;
   $('#btnSetClose').onclick=closeSettings;
   $('#btnSetSave').onclick=saveSettings;
   $('#btnTest').onclick=testVoice;
   $('#btnInstallVoice').onclick=installVoice;
+  $('#btnTrips').onclick=openTrips;
+  $('#btnTripsClose').onclick=function(){$('#trips').hidden=true};
   $('#road').onclick=shareLocation;
-  $('#btnStart').onclick=startNav;
+  $('#btnStart').onclick=beginTrip;
   $('#btnCancel').onclick=function(){$('#sheet').hidden=true;$('#top').hidden=false;setMode(false,false);clearRoute();setFollow(true)};
   $('#btnEnd').onclick=endNav;
-  $('#avoidToll').onchange=function(){
-    if(destInfo&&me&&!navActive)setDestination(destInfo.lat,destInfo.lng,destInfo.name);
-  };
-  startWatch(false);
+  $('#btnShareEta').onclick=shareEta;
+  $('#saveAs').onchange=function(){savePlaceAs($('#saveAs').value);$('#saveAs').value=''};
+  function recompute(){if(destInfo&&me&&!navActive)setDestination(destInfo.lat,destInfo.lng,destInfo.name)}
+  $('#avoidToll').onchange=recompute;
+  $('#avoidHwy').onchange=recompute;
+  startWatch(ALWAYS);
+  $('#btnPower').onclick=shutdownApp;
+  $('#btnShutdown').onclick=shutdownApp;
+  $('#btnCam').onclick=function(){if(me)markCamera(me.lat,me.lng);else toast('Menunggu GPS...')};
+  $('#btnResumeNo').onclick=function(){$('#resume').hidden=true;clearTrip()};
+  $('#btnResumeYes').onclick=resumeTrip;
+  if(APP&&APP.addListener){
+    APP.addListener('backButton',function(){
+      if(!$('#prep').hidden)return;
+      var ids=['#settings','#trips','#resume'],i;
+      for(i=0;i<ids.length;i++){if(!$(ids[i]).hidden){$(ids[i]).hidden=true;return}}
+      if(!$('#sheet').hidden){$('#btnCancel').click();return}
+      if(!$('#results').hidden){$('#results').hidden=true;return}
+      try{if(APP.minimizeApp)APP.minimizeApp()}catch(e){}
+    });
+  }
+  map.on('load',splashReady);
+  setTimeout(hideSplash,7000);
+  setTimeout(restoreTrip,2500);
   if(!KEY)setTimeout(function(){toast('Mula dengan masukkan API key di ⚙',4500)},1200);
+  if(/[#&]test/.test(location.hash)){
+    window.__t={onPos:onPos,setDestination:setDestination,beginTrip:beginTrip,startNav:startNav,endNav:endNav,applyTheme:applyTheme,sunTimes:sunTimes,
+      st:function(){return {me:me,heading:heading,route:route,navActive:navActive,zoom:map.getZoom(),bearing:map.getBearing(),chips:chipLive.length,trips:TRIPS.length,night:document.body.classList.contains('night'),next:navNext}},
+      map:function(){return map},setTheme:function(v){THEME=v;applyTheme()},setVeh:function(v){VEH=v},
+      events:function(){return route&&route.events},warm:function(){return {q:warmQ.length,n:Object.keys(warmed).length}},
+      setKeys:function(k,tt){KEY=k;TTKEY=tt||''},prepareTrip:prepareTrip,matchLane:matchLane,laneSvg:laneSvg,tollPrice:tollPrice,restoreTrip:restoreTrip};
+  }
 });
 })();
 </script>
