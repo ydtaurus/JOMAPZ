@@ -289,7 +289,26 @@ var TOL={plazas:[]};
 /* ---------- plugin native ---------- */
 var NATIVE=false;
 try{NATIVE=!!(window.Capacitor&&window.Capacitor.isNativePlatform&&window.Capacitor.isNativePlatform())}catch(e){}
-function plug(n){try{return NATIVE?window.Capacitor.registerPlugin(n):null}catch(e){return null}}
+function plug(n){
+  try{
+    var C=window.Capacitor;
+    if(!NATIVE||!C)return null;
+    if(C.Plugins&&C.Plugins[n])return C.Plugins[n];
+    if(typeof C.registerPlugin==='function')return C.registerPlugin(n);
+    if(typeof C.nativePromise!=='function')return null;
+    var hd=(C.PluginHeaders||[]).filter(function(x){return x.name===n})[0];
+    if(!hd)return null;
+    return new Proxy({},{get:function(_,m){
+      if(m==='then'||typeof m!=='string')return undefined;
+      if(m==='addListener')return function(ev,cb){return Promise.resolve(C.addListener(n,ev,cb))};
+      var mh=(hd.methods||[]).filter(function(x){return x.name===m})[0];
+      if(!mh)return undefined;
+      if(mh.rtype==='callback')return function(opts,cb){return Promise.resolve(C.nativeCallback(n,m,opts||{},cb))};
+      return function(opts){return C.nativePromise(n,m,opts||{})};
+    }});
+  }catch(e){}
+  return null;
+}
 var BG=plug('BackgroundGeolocation');
 var TTS=plug('TextToSpeech');
 var KA=plug('KeepAwake');
