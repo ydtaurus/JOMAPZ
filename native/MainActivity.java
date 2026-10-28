@@ -48,26 +48,63 @@ public class MainActivity extends BridgeActivity {
             @Override
             public void run() {
                 String url = "";
+                String dbg = "";
+                String lat = "";
+                String lng = "";
                 try {
                     Matcher m = Pattern.compile("https?://\\S+").matcher(text);
                     if (m.find()) url = m.group();
                     if (url.length() > 0) {
                         HttpURLConnection c = (HttpURLConnection) new URL(url).openConnection();
                         c.setInstanceFollowRedirects(true);
-                        c.setConnectTimeout(7000);
-                        c.setReadTimeout(7000);
-                        c.setRequestProperty("User-Agent", "Mozilla/5.0 (Linux; Android 13) AppleWebKit/537.36 Chrome/120 Mobile Safari/537.36");
-                        c.connect();
-                        c.getResponseCode();
+                        c.setConnectTimeout(8000);
+                        c.setReadTimeout(8000);
+                        c.setRequestProperty("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0 Safari/537.36");
+                        c.setRequestProperty("Accept-Language", "en-US,en;q=0.9");
+                        c.setRequestProperty("Cookie", "CONSENT=YES+cb; SOCS=CAI");
+                        int code = c.getResponseCode();
                         url = c.getURL().toString();
+                        dbg = "http " + code;
+                        StringBuilder sb = new StringBuilder();
+                        try {
+                            java.io.InputStream is = c.getInputStream();
+                            byte[] buf = new byte[16384];
+                            int n;
+                            while ((n = is.read(buf)) > 0 && sb.length() < 700000) {
+                                sb.append(new String(buf, 0, n, "UTF-8"));
+                            }
+                            is.close();
+                        } catch (Exception e) {
+                        }
                         c.disconnect();
+                        String body = sb.toString();
+                        String[] pats = new String[] {
+                            "!3d(-?\\d{1,2}\\.\\d+)!4d(-?\\d{2,3}\\.\\d+)",
+                            "@(-?\\d{1,2}\\.\\d+),(-?\\d{2,3}\\.\\d+)",
+                            "center=(-?\\d{1,2}\\.\\d+)(?:%2C|,)(-?\\d{2,3}\\.\\d+)",
+                            "\\[null,null,(-?\\d{1,2}\\.\\d+),(-?\\d{2,3}\\.\\d+)\\]"
+                        };
+                        String hay = url + "\n" + body;
+                        for (int i = 0; i < pats.length && lat.length() == 0; i++) {
+                            Matcher mm = Pattern.compile(pats[i]).matcher(hay);
+                            if (mm.find()) {
+                                lat = mm.group(1);
+                                lng = mm.group(2);
+                                dbg = dbg + " p" + i;
+                            }
+                        }
+                        dbg = dbg + " len" + body.length();
                     }
                 } catch (Exception e) {
+                    dbg = "err " + e.getClass().getSimpleName();
                 }
                 try {
                     JSONObject o = new JSONObject();
                     o.put("text", text);
                     o.put("url", url);
+                    o.put("lat", lat);
+                    o.put("lng", lng);
+                    o.put("dbg", dbg);
                     pending = o.toString();
                 } catch (Exception e) {
                     return;
