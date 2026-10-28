@@ -733,8 +733,6 @@ function loadOsmData(){
     });
     (j.lanes||[]).forEach(function(w,i){
       var seen={};
-      w.geometry=w.g.map(function(p){return {lat:p[0],lon:p[1]}});
-      w.tags=w.t;
       w.g.forEach(function(p){var k=cellKey(p[0],p[1]);if(!seen[k]){seen[k]=1;(LANEGRID[k]||(LANEGRID[k]=[])).push(w)}});
     });
     dataState=1;
@@ -785,7 +783,7 @@ function localLanes(R){
     var ways=[],seen={},a,b;
     for(a=-1;a<=1;a++)for(b=-1;b<=1;b++){
       var cell=LANEGRID[(Math.floor(t.lat*GC)+a)+','+(Math.floor(t.lng*GC)+b)];
-      if(cell)cell.forEach(function(w){if(!seen[w.t.lanes+w.g[0].join()]){seen[w.t.lanes+w.g[0].join()]=1;ways.push(w)}});
+      if(cell)cell.forEach(function(w){var sk=w.g[0].join()+'|'+w.g.length;if(!seen[sk]){seen[sk]=1;if(!w.geometry){w.geometry=w.g.map(function(p){return {lat:p[0],lon:p[1]}});w.tags=w.t}ways.push(w)}});
     }
     if(ways.length)matchLane(R,t,ways);
   });
