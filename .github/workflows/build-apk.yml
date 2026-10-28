@@ -31,6 +31,13 @@ jobs:
       - name: Pasang pakej
         run: npm install
 
+      - name: Suara dalam app (eSpeak-NG, tanpa internet)
+        run: |
+          npm install --no-save @echogarden/espeak-ng-emscripten
+          mkdir -p www/lib/espeak
+          cp node_modules/@echogarden/espeak-ng-emscripten/espeak-ng.js node_modules/@echogarden/espeak-ng-emscripten/espeak-ng.data www/lib/espeak/
+          ls -la www/lib/espeak
+
       - name: Tambah projek Android
         run: npx cap add android
 

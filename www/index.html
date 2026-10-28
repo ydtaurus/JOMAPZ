@@ -349,6 +349,8 @@ body.sat #map .maplibregl-canvas{filter:brightness(var(--dim))!important}
     <div class="row"><button class="btn d" id="btnShutdown">Matikan JOMAPZ</button></div>
 
     <h4>Suara</h4>
+    <label for="selVeng">Enjin suara</label>
+    <select id="selVeng"><option value="app">Dalam app (offline, sentiasa ada)</option><option value="sys">Suara sistem phone</option></select>
     <div class="row"><button class="btn s" id="btnTest">Uji suara</button><button class="btn s" id="btnInstallVoice">Pasang suara</button></div>
     <p class="note">Suara datang dari enjin suara Google dalam phone kau. Kalau suara Melayu senyap, tekan "Pasang suara" dan muat turun data Bahasa Melayu.</p>
     <div class="sw"><span>Suara arahan</span><input type="checkbox" id="swVoice"></div>
@@ -1427,6 +1429,7 @@ function setDestination(lat,lng,name){
   }).catch(function(e){toast(e.message,4500)});
 }
 function showOptions(list){
+  if(VENG==='app')espLoad();
   routeOpts=list;
   var sel=0,i;
   for(i=0;i<list.length;i++){if(list[i].labels.indexOf(PREF)>=0){sel=i;break}}
@@ -1898,6 +1901,8 @@ function project(lat,lng){
 function showPrep(show){$('#prep').hidden=!show}
 function beginTrip(){
   if(!route||prepBusy)return;
+  if(VENG==='app')espLoad();
+  try{var _c=spAudio();if(_c.state==='suspended')_c.resume()}catch(e){}
   prepBusy=true;
   $('#p2').textContent='⏳';$('#p3').textContent='⏳';$('#pNote').textContent='Selepas ini navigasi terus berjalan walaupun internet terputus. Peta yang belum dilihat mungkin kosong tanpa internet.';
   showPrep(true);
@@ -1985,6 +1990,25 @@ function resumeTrip(){
     }else if(tries++<60){toast('Menunggu GPS...',1500);setTimeout(wait,500)}
     else toast('GPS tak ditemui')
   })();
+}
+var hpush=false,ignorePop=false;
+var BACKIDS=['#ask','#placeDlg','#mapType','#settings','#trips','#resume'];
+function backClose(){
+  if(!$('#prep').hidden)return true;
+  var i;
+  for(i=0;i<BACKIDS.length;i++){if(!$(BACKIDS[i]).hidden){$(BACKIDS[i]).hidden=true;return true}}
+  if(pinPop){clearPin();return true}
+  if(!$('#sheet').hidden){$('#btnCancel').click();return true}
+  if(!$('#results').hidden){$('#results').hidden=true;return true}
+  return false;
+}
+function anyOverlay(){
+  return BACKIDS.concat(['#sheet','#results']).some(function(id){var e=$(id);return e&&!e.hidden});
+}
+function histSync(){
+  var a=anyOverlay();
+  if(a&&!hpush){hpush=true;try{history.pushState({jz:1},'')}catch(e){}}
+  else if(!a&&hpush){hpush=false;ignorePop=true;try{history.back()}catch(e){ignorePop=false}}
 }
 function shutdownApp(){
   askYes('Matikan JOMAPZ sepenuhnya? Navigasi, GPS dan suara akan berhenti.',function(){
@@ -2182,8 +2206,62 @@ function startSpeech(){
   return t;
 }
 var lastSpeakErr=0;
+var VENG=LS.get('veng','app');
+var ESP={m:null,w:null,rate:22050,p:null,fail:''},spCtx=null,spCur=null,spQ=[],spBusy=false,spGen=0,spCache={},spKeys=[];
+function espLoad(){
+  if(ESP.p)return ESP.p;
+  ESP.p=import('./lib/espeak/espeak-ng.js').then(function(mod){return mod.default()}).then(function(m){
+    ESP.m=m;ESP.w=new m.eSpeakNGWorker();ESP.rate=ESP.w.get_samplerate()||22050;
+    try{ESP.w.set_rate(165)}catch(e){}
+    return true;
+  }).catch(function(e){ESP.fail=String(e&&e.message||e);return false});
+  return ESP.p;
+}
+function spAudio(){return spCtx||(spCtx=new (window.AudioContext||window.webkitAudioContext)())}
+function nativeFocus(on){try{if(window.JomapzNative&&window.JomapzNative.focus)window.JomapzNative.focus(!!on)}catch(e){}}
+function espBuf(text){
+  var key=LANG+'|'+text;if(spCache[key])return spCache[key];
+  var m=ESP.m,w=ESP.w,ch=[],tot=0;
+  try{w.set_voice(LANG==='ms'?'ms':'en-us','',0,0,0)}catch(e){}
+  var cb=m.addFunction(function(wav,n){if(n>0){ch.push(new Int16Array(m.HEAP16.buffer.slice(wav,wav+n*2)));tot+=n}return 0},'iiii');
+  try{w.synth_(text,cb)}finally{m.removeFunction(cb)}
+  if(!tot)return null;
+  var b=spAudio().createBuffer(1,tot,ESP.rate),d=b.getChannelData(0),o=0;
+  ch.forEach(function(a){for(var i=0;i<a.length;i++)d[o++]=Math.max(-1,Math.min(1,a[i]/32768*1.6))});
+  spCache[key]=b;spKeys.push(key);
+  if(spKeys.length>60)delete spCache[spKeys.shift()];
+  return b;
+}
+function spPump(){
+  if(spBusy||spCur||!spQ.length)return;
+  var it=spQ.shift();spBusy=true;
+  espLoad().then(function(ok){
+    spBusy=false;
+    if(it[1]!==spGen)return spPump();
+    if(!ok){sysSpeak(it[0],true);return spPump()}
+    var b=null;
+    try{b=espBuf(it[0])}catch(e){ESP.fail=String(e&&e.message||e)}
+    if(!b){sysSpeak(it[0],true);return spPump()}
+    var ctx=spAudio();if(ctx.state==='suspended')ctx.resume();
+    var src=ctx.createBufferSource();src.buffer=b;src.connect(ctx.destination);
+    spCur=src;nativeFocus(true);
+    src.onended=function(){if(spCur===src)spCur=null;if(spQ.length)spPump();else nativeFocus(false)};
+    src.start();
+  });
+}
+function appSpeak(text,queue){
+  if(!queue){
+    spGen++;spQ=[];
+    if(spCur){var c=spCur;spCur=null;c.onended=null;try{c.stop()}catch(e){}}
+  }
+  spQ.push([text,spGen]);spPump();
+}
 function speak(text,queue){
   if(!VOICE)return;
+  if(VENG==='app'){appSpeak(text,queue);return}
+  sysSpeak(text,queue);
+}
+function sysSpeak(text,queue){
   var web=function(){
     try{
       var s=window.speechSynthesis;if(!s)return;
@@ -2203,6 +2281,7 @@ function speak(text,queue){
   web();
 }
 function stopSpeak(){
+  spGen++;spQ=[];if(spCur){var c=spCur;spCur=null;c.onended=null;try{c.stop()}catch(e){}}nativeFocus(false);
   try{if(TTS)TTS.stop().catch(function(){});else if(window.speechSynthesis)window.speechSynthesis.cancel()}catch(e){}
 }
 
@@ -2220,7 +2299,7 @@ document.addEventListener('visibilitychange',function(){
 
 /* ---------- tetapan ---------- */
 function openSettings(){
-  $('#swVoice').checked=VOICE;$('#swDim').checked=DIM;$('#selLang').value=LANG;
+  $('#swVoice').checked=VOICE;$('#selVeng').value=VENG;$('#swDim').checked=DIM;$('#selLang').value=LANG;
   $('#selVeh').value=VEH;$('#selPref').value=PREF;$('#swHwy').checked=HWY;
   $('#selTheme').value=THEME;$('#swAZ').checked=AZ;$('#selZ').value=String(ZOFF);
   $('#swAes').checked=!!SHOW.aes;$('#swRr').checked=!!SHOW.rr;$('#swSig').checked=!!SHOW.sig;$('#swToll').checked=!!SHOW.toll;
@@ -2241,7 +2320,7 @@ function saveSettings(){
   var tk=$('#ttKey').value.trim();if(tk||!TTBUILT){TTKEY=tk;LS.set('ttKey',TTKEY)}
   var al=$('#swAlways').checked;LS.set('always',al);
   if(al!==ALWAYS){ALWAYS=al;if(!navActive)startWatch(ALWAYS)}
-  LS.set('voice',VOICE);LS.set('dim',DIM);LS.set('lang2',LANG);
+  VENG=$('#selVeng').value;LS.set('veng',VENG);LS.set('voice',VOICE);LS.set('dim',DIM);LS.set('lang2',LANG);
   LS.set('veh',VEH);LS.set('pref',PREF);LS.set('avoidHwy',HWY);LS.set('theme',THEME);LS.set('az',AZ);LS.set('zoff',ZOFF);LS.set('show',SHOW);LS.set('chipsec',CHIPSEC);
   if(!DIM)document.documentElement.style.setProperty('--dim','1');
   $('#avoidHwy').checked=HWY;
@@ -2251,6 +2330,7 @@ function saveSettings(){
   if(langChanged){LS.set('langApplied',LANG);setTimeout(function(){location.reload()},600)}
 }
 function testVoice(){
+  VENG=$('#selVeng').value;LS.set('veng',VENG);
   LANG=$('#selLang').value;
   var wasVoice=VOICE;VOICE=true;
   if(TTS&&TTS.isLanguageSupported){
@@ -2260,6 +2340,7 @@ function testVoice(){
   }
   speak(tx().test);
   VOICE=wasVoice;
+  if(VENG==='app')espLoad().then(function(ok){if(!ok)toast('Suara dalam app gagal dimuat: '+ESP.fail,6000)});
 }
 function installVoice(){
   if(TTS&&TTS.openInstall){TTS.openInstall().catch(function(){toast('Buka Tetapan phone > Output teks-ke-ucapan untuk pasang suara',6000)})}
@@ -2308,7 +2389,7 @@ var EN_FULL={
 };
 
 Object.assign(EN_FULL,{
-'Tempat di peta':'Places on map','Pilih tempat yang mahu dipaparkan pada peta. Lalai: semua dimatikan supaya skrin kemas.':'Choose which places to show on the map. Default: all off to keep the screen clean.',
+'Tempat di peta':'Places on map','Enjin suara':'Voice engine','Dalam app (offline, sentiasa ada)':'Built into the app (offline, always available)','Suara sistem phone':'Phone system voice','Pilih tempat yang mahu dipaparkan pada peta. Lalai: semua dimatikan supaya skrin kemas.':'Choose which places to show on the map. Default: all off to keep the screen clean.',
 'Matikan JOMAPZ sepenuhnya? Navigasi, GPS dan suara akan berhenti.':'Shut down JOMAPZ completely? Navigation, GPS and voice will stop.','OK':'OK',
 'Tambah':'Add','Simpan tempat':'Save place','Ubah tempat':'Edit place','Nama':'Name','Ikon':'Icon','Lokasi':'Location','Contoh: Rumah mak':'Example: Mum\'s house',
 '📍 Guna lokasi saya sekarang':'📍 Use my current location','Padam':'Delete','Simpan':'Save','Jenis peta':'Map type','Lalai':'Default','Standard OSM':'Standard OSM',
@@ -2401,6 +2482,7 @@ function runDiag(){
     ['Laluan Valhalla',function(){return diagFetch('https://valhalla1.openstreetmap.de/status')}],
     ['Peta OSM',function(){return diagFetch('https://tile.openstreetmap.org/10/804/508.png')}],
     ['Plugin',function(){return Promise.resolve('GPS '+!!BG+' suara '+!!TTS+' app '+!!APP+' native '+!!window.JomapzNative)}],
+    ['Suara dalam app',function(){return espLoad().then(function(ok){if(!ok)throw ESP.fail||'gagal';return 'sedia ('+ESP.rate+' Hz)'})}],
     ['Suara English',function(){return TTS?TTS.isLanguageSupported({lang:'en-US'}).then(function(r){return JSON.stringify(r)}):Promise.reject('plugin tiada')}],
     ['Suara Melayu',function(){return TTS?TTS.isLanguageSupported({lang:'ms-MY'}).then(function(r){return JSON.stringify(r)}):Promise.reject('plugin tiada')}],
     ['GitHub',function(){return diagFetch('https://api.github.com/repos/'+GH_REPO+'/releases/latest')}]
@@ -2444,6 +2526,7 @@ function checkUpdate(manual){
     }else if(manual)toast('Sudah versi terkini (build '+BUILD+')');
   }).catch(function(){if(manual)toast('Tidak dapat semak kemas kini sekarang',3500)});
 }
+document.addEventListener('touchend',function(){try{if(spCtx&&spCtx.state==='suspended')spCtx.resume()}catch(e){}},{passive:true});
 document.addEventListener('DOMContentLoaded',function(){
   startI18n();
   DATAP=loadOsmData();
@@ -2514,15 +2597,14 @@ document.addEventListener('DOMContentLoaded',function(){
   $('#btnResumeYes').onclick=resumeTrip;
   if(APP&&APP.addListener){
     APP.addListener('backButton',function(){
-      if(!$('#prep').hidden)return;
-      var ids=['#ask','#placeDlg','#mapType','#settings','#trips','#resume'],i;
-      for(i=0;i<ids.length;i++){if(!$(ids[i]).hidden){$(ids[i]).hidden=true;return}}
-      if(pinPop){clearPin();return}
-      if(!$('#sheet').hidden){$('#btnCancel').click();return}
-      if(!$('#results').hidden){$('#results').hidden=true;return}
-      try{if(APP.minimizeApp)APP.minimizeApp()}catch(e){}
+      if(!backClose()){try{if(APP.minimizeApp)APP.minimizeApp()}catch(e){}}
     });
   }
+  new MutationObserver(histSync).observe(document.body,{attributes:true,attributeFilter:['hidden'],subtree:true});
+  window.addEventListener('popstate',function(){
+    if(ignorePop){ignorePop=false;return}
+    hpush=false;backClose();histSync();
+  });
   map.on('load',splashReady);
   setTimeout(hideSplash,7000);
   setTimeout(restoreTrip,2500);

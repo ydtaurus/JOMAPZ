@@ -12,8 +12,29 @@ import org.json.JSONObject;
 
 public class MainActivity extends BridgeActivity {
     private static volatile String pending = "";
+    private final android.media.AudioManager.OnAudioFocusChangeListener afl =
+            new android.media.AudioManager.OnAudioFocusChangeListener() {
+                @Override
+                public void onAudioFocusChange(int change) {
+                }
+            };
 
     public class ShareBridge {
+        @JavascriptInterface
+        public void focus(final boolean on) {
+            try {
+                android.media.AudioManager am = (android.media.AudioManager) getSystemService(android.content.Context.AUDIO_SERVICE);
+                if (am == null) return;
+                if (on) {
+                    am.requestAudioFocus(afl, android.media.AudioManager.STREAM_MUSIC,
+                            android.media.AudioManager.AUDIOFOCUS_GAIN_TRANSIENT_MAY_DUCK);
+                } else {
+                    am.abandonAudioFocus(afl);
+                }
+            } catch (Exception e) {
+            }
+        }
+
         @JavascriptInterface
         public void quit() {
             runOnUiThread(new Runnable() {
@@ -66,6 +87,7 @@ public class MainActivity extends BridgeActivity {
         super.onCreate(savedInstanceState);
         try {
             getBridge().getWebView().addJavascriptInterface(new ShareBridge(), "JomapzNative");
+            getBridge().getWebView().getSettings().setMediaPlaybackRequiresUserGesture(false);
         } catch (Exception e) {
         }
         handleShare(getIntent());

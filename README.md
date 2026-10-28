@@ -21,3 +21,8 @@ A personal and family turn-by-turn navigation app for Android, built for Malaysi
 
 ## Contact
 Pratama Yudha
+
+## Third-party
+
+- Voice guidance is synthesised offline with eSpeak NG (GPL-3.0), packaged for the browser by the Echogarden project.
+- Map data © OpenStreetMap contributors; vector tiles by OpenFreeMap; routing by Valhalla; search by Photon.
