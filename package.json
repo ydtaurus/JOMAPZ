@@ -10,7 +10,8 @@
     "@capacitor/core": "^6.1.2",
     "@capacitor/share": "^6.0.4",
     "@capacitor/app": "^6.0.0",
-    "@capacitor/browser": "^6.0.0"
+    "@capacitor/browser": "^6.0.0",
+    "@capacitor/clipboard": "^6.0.0"
   },
   "devDependencies": {
     "@capacitor/assets": "^3.0.5",

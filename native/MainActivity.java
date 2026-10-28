@@ -15,6 +15,25 @@ public class MainActivity extends BridgeActivity {
 
     public class ShareBridge {
         @JavascriptInterface
+        public void resolve(final String text, final String id) {
+            new Thread(new Runnable() {
+                @Override
+                public void run() {
+                    final String res = resolveText(text);
+                    runOnUiThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            try {
+                                getBridge().getWebView().evaluateJavascript("window.__resolved&&window.__resolved(" + JSONObject.quote(id) + "," + JSONObject.quote(res) + ")", null);
+                            } catch (Exception e) {
+                            }
+                        }
+                    });
+                }
+            }).start();
+        }
+
+        @JavascriptInterface
         public String takeShare() {
             String p = pending;
             pending = "";
@@ -39,15 +58,8 @@ public class MainActivity extends BridgeActivity {
         handleShare(intent);
     }
 
-    private void handleShare(final Intent in) {
-        if (in == null || !Intent.ACTION_SEND.equals(in.getAction())) return;
-        final String text = in.getStringExtra(Intent.EXTRA_TEXT);
-        in.setAction(Intent.ACTION_MAIN);
-        if (text == null || text.length() == 0) return;
-        new Thread(new Runnable() {
-            @Override
-            public void run() {
-                String url = "";
+    static String resolveText(final String text) {
+        String url = "";
                 String dbg = "";
                 String lat = "";
                 String lng = "";
@@ -105,10 +117,23 @@ public class MainActivity extends BridgeActivity {
                     o.put("lat", lat);
                     o.put("lng", lng);
                     o.put("dbg", dbg);
-                    pending = o.toString();
+                    return o.toString();
                 } catch (Exception e) {
-                    return;
+                    return "";
                 }
+    }
+
+    private void handleShare(final Intent in) {
+        if (in == null || !Intent.ACTION_SEND.equals(in.getAction())) return;
+        final String text = in.getStringExtra(Intent.EXTRA_TEXT);
+        in.setAction(Intent.ACTION_MAIN);
+        if (text == null || text.length() == 0) return;
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                String res = resolveText(text);
+                if (res.length() == 0) return;
+                pending = res;
                 runOnUiThread(new Runnable() {
                     @Override
                     public void run() {

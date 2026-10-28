@@ -20,7 +20,7 @@ body.night #map .maplibregl-canvas{filter:invert(.93) hue-rotate(180deg) brightn
 #top{position:absolute;left:10px;right:10px;top:calc(var(--top) + 10px);z-index:5}
 #searchRow{display:flex;background:var(--card);border-radius:14px;box-shadow:0 2px 10px rgba(0,0,0,.25);overflow:hidden}
 #q{flex:1;border:0;outline:0;padding:14px;font-size:16px;background:transparent;color:var(--fg);min-width:0}
-#goSearch{width:52px;font-size:20px}
+#goSearch,#btnPaste{width:48px;font-size:20px}
 #results{background:var(--card);border-radius:14px;margin-top:6px;box-shadow:0 2px 10px rgba(0,0,0,.25);max-height:42vh;overflow:auto}
 #results div{padding:12px 14px;border-bottom:1px solid var(--line);font-size:15px}
 #results div:last-child{border-bottom:0}
@@ -118,7 +118,7 @@ body.night .cc.inc{background:#4a1f1c;color:#ffd4d0;border-color:#7a2b26}
 <div id="map"></div>
 
 <div id="top">
-  <div id="searchRow"><input id="q" type="search" placeholder="Cari tempat..." enterkeyhint="search" autocomplete="off"><button id="goSearch" aria-label="Cari">🔍</button></div>
+  <div id="searchRow"><input id="q" type="search" placeholder="Cari tempat..." enterkeyhint="search" autocomplete="off"><button id="btnPaste" aria-label="Tampal">📋</button><button id="goSearch" aria-label="Cari">🔍</button></div>
   <div id="results" hidden></div>
   <div id="places" class="scroll"></div>
   <div id="chips" class="scroll"></div>
@@ -295,6 +295,7 @@ var TTS=plug('TextToSpeech');
 var KA=plug('KeepAwake');
 var SH=plug('Share');
 var BR=plug('Browser');
+var CB=plug('Clipboard');
 var GH_REPO='ydtaurus/jomapz',BUILD=0,updInfo=null;
 var APP=plug('App');
 var ALWAYS=LS.get('always',true);
@@ -891,12 +892,7 @@ function searchNominatim(text){
     return a.map(function(x){var p=(x.display_name||'').split(', ');return {lat:parseFloat(x.lat),lng:parseFloat(x.lon),name:x.name||p[0],label:p.slice(0,4).join(', ')}});
   });
 }
-function doSearch(){
-  var text=$('#q').value.trim();
-  if(!text)return;
-  var c=parseCoord(text);
-  if(c){$('#results').hidden=true;$('#q').blur();setDestination(c.lat,c.lng,'Lokasi dari link');return}
-  if(/goo\.gl|maps\.app/i.test(text)){showResults([],text);$('#results').innerHTML='<div>Link pendek Google tak boleh dibaca. Buka link itu, salin link penuh dari bar alamat (ada @3.xxx,101.xxx) atau tampal koordinat.</div>';return}
+function searchByName(text){
   searchPhoton(text).then(function(r){
     if(r.length)return r;
     return searchNominatim(text).catch(function(){return []});
@@ -906,6 +902,27 @@ function doSearch(){
       toast(navigator.onLine===false?'Tiada sambungan internet':'Pelayan carian tak dapat dicapai. Cuba lagi',3500);
     });
   });
+}
+function doSearch(){
+  var text=$('#q').value.trim();
+  if(!text)return;
+  var c=parseCoord(text);
+  if(c){$('#results').hidden=true;$('#q').blur();setDestination(c.lat,c.lng,'Lokasi dari link');return}
+  if(/https?:\/\//i.test(text)){
+    $('#q').blur();toast('Membuka link...',8000);
+    resolveLink(text).then(function(o){
+      $('#toast').hidden=true;
+      if(o)useResolved(o,true);
+      else{showResults([],text);$('#results').innerHTML='<div>Link ini tak dapat dibuka. Cuba salin koordinat dari Google Maps (tekan lama pada peta, tekan nombor koordinat) dan tampal di sini.</div>'}
+    });
+    return;
+  }
+  searchByName(text);
+}
+function pasteSearch(){
+  var go=function(v){v=(v||'').trim();if(!v){toast('Clipboard kosong');return}$('#q').value=v;doSearch()};
+  if(CB&&CB.read){CB.read().then(function(r){go(r&&r.value)}).catch(function(){toast('Tak dapat baca clipboard')});return}
+  try{navigator.clipboard.readText().then(go,function(){toast('Tak dapat baca clipboard')})}catch(e){toast('Tak dapat baca clipboard')}
 }
 
 /* ---------- laluan ---------- */
@@ -1708,7 +1725,7 @@ function installVoice(){
 
 /* ---------- bahasa paparan (ms / en) ---------- */
 var EN_FULL={
-'Cari tempat...':'Search places...','Cari':'Search','Kongsi lokasi saya':'Share my location','Kompas':'Compass','Tandakan kamera laju di sini':'Mark a speed camera here','Rekod perjalanan':'Trip history','Lokasi saya':'My location','Tetapan':'Settings','Matikan JOMAPZ':'Shut down JOMAPZ',
+'Cari tempat...':'Search places...','Cari':'Search','Tampal':'Paste','Membuka link...':'Opening link...','Clipboard kosong':'Clipboard is empty','Tak dapat baca clipboard':'Cannot read clipboard','Link ini tak dapat dibuka. Cuba salin koordinat dari Google Maps (tekan lama pada peta, tekan nombor koordinat) dan tampal di sini.':'This link could not be opened. Try copying the coordinates from Google Maps (long-press the map, tap the coordinates) and paste them here.','Kongsi lokasi saya':'Share my location','Kompas':'Compass','Tandakan kamera laju di sini':'Mark a speed camera here','Rekod perjalanan':'Trip history','Lokasi saya':'My location','Tetapan':'Settings','Matikan JOMAPZ':'Shut down JOMAPZ',
 'Mencari nama jalan...':'Finding road name...','Menunggu GPS':'Waiting for GPS','Menunggu GPS...':'Waiting for GPS...','Sambung perjalanan?':'Resume trip?','Buang':'Discard','Sambung':'Resume','Kemas kini tersedia':'Update available','Nanti':'Later','Kemas kini':'Update',
 'Mod motosikal: enjin laluan tak tahu jalan yang melarang motosikal. Semak papan tanda dan guna "Elak lebuh raya" jika perlu.':'Motorcycle mode: the routing engine does not know which roads ban motorcycles. Check road signs and use "Avoid highways" if needed.',
 'Elak tol':'Avoid tolls','Elak lebuh raya':'Avoid highways','Simpan tempat ini sebagai...':'Save this place as...','Rumah':'Home','Kerja':'Work','Kegemaran':'Favourite','Batal':'Cancel','Mula':'Start','Kongsi':'Share','Tamat':'End',
@@ -1782,22 +1799,33 @@ function startI18n(){
 
 
 /* ---------- terima kongsi dari Google Maps ---------- */
-function onShared(raw){
-  var o;try{o=JSON.parse(raw)}catch(e){return}
-  if(!o)return;
+function useResolved(o,quiet){
   var url=o.url||'',text=o.text||'';
   var c=null;
   if(o.lat&&o.lng){var la=parseFloat(o.lat),lo=parseFloat(o.lng);if(la>-5&&la<10&&lo>95&&lo<121)c={lat:la,lng:lo}}
   c=c||parseCoord(url)||parseCoord(text);
   var name=(text.split(/\r?\n/)[0]||'').replace(/https?:\/\/\S+/g,'').trim();
-  toast('Lokasi diterima dari Google Maps'+(name?': '+name:''),4000);
+  if(!quiet)toast('Lokasi diterima dari Google Maps'+(name?': '+name:''),4000);
   var tries=0;
   (function go(){
     if(!me&&tries++<40){setTimeout(go,500);return}
-    if(c){setDestination(c.lat,c.lng,name||'Lokasi dikongsi');return}
+    if(c){$('#results').hidden=true;setDestination(c.lat,c.lng,name||'Lokasi dikongsi');return}
     toast('Koordinat tak dijumpai dalam link ('+(o.dbg||'tiada maklumat')+'). Mencari ikut nama...',6000);
-    if(name){$('#top').hidden=false;$('#q').value=name;doSearch()}
+    if(name){$('#top').hidden=false;$('#q').value=name;searchByName(name)}
+    else showResults([],text);
   })();
+}
+function onShared(raw){var o;try{o=JSON.parse(raw)}catch(e){return}if(o)useResolved(o,false)}
+var resolvers={};
+window.__resolved=function(id,raw){var f=resolvers[id];if(!f)return;delete resolvers[id];var o=null;try{o=JSON.parse(raw)}catch(e){}f(o)};
+function resolveLink(text){
+  return new Promise(function(ok){
+    if(!(window.JomapzNative&&JomapzNative.resolve)){ok(null);return}
+    var id='r'+Date.now();
+    resolvers[id]=ok;
+    setTimeout(function(){if(resolvers[id]){delete resolvers[id];ok(null)}},20000);
+    try{JomapzNative.resolve(text,id)}catch(e){delete resolvers[id];ok(null)}
+  });
 }
 window.__sharePing=function(){try{if(window.JomapzNative){var s=JomapzNative.takeShare();if(s)onShared(s)}}catch(e){}};
 
@@ -1870,6 +1898,7 @@ document.addEventListener('DOMContentLoaded',function(){
   initMap();
   $('#avoidHwy').checked=HWY;
   $('#goSearch').onclick=doSearch;
+  $('#btnPaste').onclick=pasteSearch;
   $('#q').addEventListener('keydown',function(e){if(e.key==='Enter')doSearch()});
   $('#q').addEventListener('input',function(){if(!$('#q').value)$('#results').hidden=true});
   $('#btnLoc').onclick=function(){
