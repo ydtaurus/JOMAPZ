@@ -26,3 +26,5 @@ Pratama Yudha
 
 - Voice guidance is synthesised offline with eSpeak NG (GPL-3.0), packaged for the browser by the Echogarden project.
 - Map data © OpenStreetMap contributors; vector tiles by OpenFreeMap; routing by Valhalla; search by Photon.
+
+- Natural voice: the app fetches short spoken phrases from Google Translate's text-to-speech endpoint (unofficial, needs internet, cached on the phone). When offline it falls back to the bundled eSpeak NG voice.

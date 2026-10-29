@@ -4,13 +4,136 @@ import android.content.Intent;
 import android.os.Bundle;
 import android.webkit.JavascriptInterface;
 import com.getcapacitor.BridgeActivity;
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.InputStream;
 import java.net.HttpURLConnection;
+import java.net.URLEncoder;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.net.URL;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import org.json.JSONObject;
 
 public class MainActivity extends BridgeActivity {
+    private android.media.MediaPlayer mp;
+    private volatile int playGen = 0;
+    private final ExecutorService pool = Executors.newFixedThreadPool(3);
+
+    private File ttsFile(String text, String lang) {
+        File d = new File(getCacheDir(), "tts");
+        d.mkdirs();
+        String h = Integer.toHexString((lang + "|" + text).hashCode()) + "_" + text.length();
+        return new File(d, h + ".mp3");
+    }
+
+    private boolean fetchTts(String text, String lang) {
+        File f = ttsFile(text, lang);
+        if (f.exists() && f.length() > 200) return true;
+        HttpURLConnection c = null;
+        try {
+            String u = "https://translate.google.com/translate_tts?ie=UTF-8&client=tw-ob&tl="
+                    + URLEncoder.encode(lang, "UTF-8") + "&q=" + URLEncoder.encode(text, "UTF-8");
+            c = (HttpURLConnection) new URL(u).openConnection();
+            c.setConnectTimeout(6000);
+            c.setReadTimeout(8000);
+            c.setRequestProperty("User-Agent", "Mozilla/5.0 (Linux; Android 13) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0 Mobile Safari/537.36");
+            c.setRequestProperty("Referer", "https://translate.google.com/");
+            if (c.getResponseCode() != 200) return false;
+            File tmp = new File(f.getPath() + ".tmp");
+            InputStream is = c.getInputStream();
+            FileOutputStream os = new FileOutputStream(tmp);
+            byte[] buf = new byte[8192];
+            int n;
+            long tot = 0;
+            while ((n = is.read(buf)) > 0) {
+                os.write(buf, 0, n);
+                tot += n;
+            }
+            os.close();
+            is.close();
+            if (tot < 200) {
+                tmp.delete();
+                return false;
+            }
+            return tmp.renameTo(f);
+        } catch (Exception e) {
+            return false;
+        } finally {
+            if (c != null) c.disconnect();
+        }
+    }
+
+    private void notifySay(final int id, final boolean ok) {
+        runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                try {
+                    getBridge().getWebView().evaluateJavascript("window.__say&&window.__say(" + id + "," + (ok ? "true" : "false") + ")", null);
+                } catch (Exception e) {
+                }
+            }
+        });
+    }
+
+    private void stopMp() {
+        try {
+            if (mp != null) {
+                mp.setOnCompletionListener(null);
+                mp.setOnErrorListener(null);
+                mp.stop();
+                mp.release();
+            }
+        } catch (Exception e) {
+        }
+        mp = null;
+    }
+
+    private void startMp(final File f, final int id, final int gen) {
+        runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                if (gen != playGen) return;
+                try {
+                    stopMp();
+                    mp = new android.media.MediaPlayer();
+                    mp.setAudioAttributes(new android.media.AudioAttributes.Builder()
+                            .setUsage(android.media.AudioAttributes.USAGE_ASSISTANCE_NAVIGATION_GUIDANCE)
+                            .setContentType(android.media.AudioAttributes.CONTENT_TYPE_SPEECH).build());
+                    mp.setDataSource(f.getPath());
+                    mp.setOnCompletionListener(new android.media.MediaPlayer.OnCompletionListener() {
+                        @Override
+                        public void onCompletion(android.media.MediaPlayer m) {
+                            notifySay(id, true);
+                        }
+                    });
+                    mp.setOnErrorListener(new android.media.MediaPlayer.OnErrorListener() {
+                        @Override
+                        public boolean onError(android.media.MediaPlayer m, int what, int extra) {
+                            f.delete();
+                            notifySay(id, false);
+                            return true;
+                        }
+                    });
+                    mp.setOnPreparedListener(new android.media.MediaPlayer.OnPreparedListener() {
+                        @Override
+                        public void onPrepared(android.media.MediaPlayer m) {
+                            try {
+                                m.start();
+                            } catch (Exception e) {
+                                notifySay(id, false);
+                            }
+                        }
+                    });
+                    mp.prepareAsync();
+                } catch (Exception e) {
+                    notifySay(id, false);
+                }
+            }
+        });
+    }
+
     private static volatile String pending = "";
     private final android.media.AudioManager.OnAudioFocusChangeListener afl =
             new android.media.AudioManager.OnAudioFocusChangeListener() {
@@ -33,6 +156,50 @@ public class MainActivity extends BridgeActivity {
                 }
             } catch (Exception e) {
             }
+        }
+
+        @JavascriptInterface
+        public boolean has(String text, String lang) {
+            File f = ttsFile(text, lang);
+            return f.exists() && f.length() > 200;
+        }
+
+        @JavascriptInterface
+        public void prefetch(final String text, final String lang) {
+            pool.execute(new Runnable() {
+                @Override
+                public void run() {
+                    fetchTts(text, lang);
+                }
+            });
+        }
+
+        @JavascriptInterface
+        public void play(final String text, final String lang, final int id) {
+            final int gen = ++playGen;
+            pool.execute(new Runnable() {
+                @Override
+                public void run() {
+                    boolean ok = fetchTts(text, lang);
+                    if (gen != playGen) return;
+                    if (!ok) {
+                        notifySay(id, false);
+                        return;
+                    }
+                    startMp(ttsFile(text, lang), id, gen);
+                }
+            });
+        }
+
+        @JavascriptInterface
+        public void stopPlay() {
+            playGen++;
+            runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+                    stopMp();
+                }
+            });
         }
 
         @JavascriptInterface
@@ -88,6 +255,26 @@ public class MainActivity extends BridgeActivity {
         try {
             getBridge().getWebView().addJavascriptInterface(new ShareBridge(), "JomapzNative");
             getBridge().getWebView().getSettings().setMediaPlaybackRequiresUserGesture(false);
+        } catch (Exception e) {
+        }
+        try {
+            getOnBackPressedDispatcher().addCallback(this, new androidx.activity.OnBackPressedCallback(true) {
+                @Override
+                public void handleOnBackPressed() {
+                    try {
+                        getBridge().getWebView().evaluateJavascript(
+                                "(function(){try{return window.__jzBack&&window.__jzBack()?1:0}catch(e){return 0}})()",
+                                new android.webkit.ValueCallback<String>() {
+                                    @Override
+                                    public void onReceiveValue(String v) {
+                                        if (!"1".equals(v)) moveTaskToBack(true);
+                                    }
+                                });
+                    } catch (Exception e) {
+                        moveTaskToBack(true);
+                    }
+                }
+            });
         } catch (Exception e) {
         }
         handleShare(getIntent());
