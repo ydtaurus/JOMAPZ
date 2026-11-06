@@ -474,11 +474,26 @@ public class MainActivity extends BridgeActivity {
         handleShare(intent);
     }
 
+    static String[] firstPair(String hay, String re) {
+        Matcher m = Pattern.compile(re).matcher(hay);
+        if (m.find()) return new String[] {m.group(1), m.group(2)};
+        return null;
+    }
+
+    static String[] lastPair(String hay, String re) {
+        Matcher m = Pattern.compile(re).matcher(hay);
+        String[] r = null;
+        while (m.find()) r = new String[] {m.group(1), m.group(2)};
+        return r;
+    }
+
     static String resolveText(final String text) {
         String url = "";
                 String dbg = "";
                 String lat = "";
                 String lng = "";
+                String src = "";
+                String cands = "";
                 try {
                     Matcher m = Pattern.compile("https?://\\S+").matcher(text);
                     if (m.find()) url = m.group();
@@ -506,21 +521,25 @@ public class MainActivity extends BridgeActivity {
                         }
                         c.disconnect();
                         String body = sb.toString();
-                        String[] pats = new String[] {
-                            "!3d(-?\\d{1,2}\\.\\d+)!4d(-?\\d{2,3}\\.\\d+)",
-                            "@(-?\\d{1,2}\\.\\d+),(-?\\d{2,3}\\.\\d+)",
-                            "center=(-?\\d{1,2}\\.\\d+)(?:%2C|,)(-?\\d{2,3}\\.\\d+)",
-                            "\\[null,null,(-?\\d{1,2}\\.\\d+),(-?\\d{2,3}\\.\\d+)\\]"
-                        };
-                        String hay = url + "\n" + body;
-                        for (int i = 0; i < pats.length && lat.length() == 0; i++) {
-                            Matcher mm = Pattern.compile(pats[i]).matcher(hay);
-                            if (mm.find()) {
-                                lat = mm.group(1);
-                                lng = mm.group(2);
-                                dbg = dbg + " p" + i;
+                        String[] u3 = lastPair(url, "!3d(-?\\d{1,2}\\.\\d+)!4d(-?\\d{2,3}\\.\\d+)");
+                        String[] uq = firstPair(url, "[?&](?:q|ll|query|destination)=(-?\\d{1,2}\\.\\d+)(?:%2C|,)(-?\\d{2,3}\\.\\d+)");
+                        String[] og = firstPair(body, "staticmap\\?center=(-?\\d{1,2}\\.\\d+)(?:%2C|,)(-?\\d{2,3}\\.\\d+)");
+                        if (og == null) og = firstPair(body, "center=(-?\\d{1,2}\\.\\d+)(?:%2C|,)(-?\\d{2,3}\\.\\d+)");
+                        String[] ua = firstPair(url, "@(-?\\d{1,2}\\.\\d+),(-?\\d{2,3}\\.\\d+)");
+                        String[] b3 = firstPair(body, "!3d(-?\\d{1,2}\\.\\d+)!4d(-?\\d{2,3}\\.\\d+)");
+                        String[][] order = new String[][] {u3, uq, og, ua};
+                        String[] keys = new String[] {"url3d", "urlq", "og", "urlat"};
+                        for (int q = 0; q < order.length; q++) {
+                            if (order[q] != null && lat.length() == 0) {
+                                lat = order[q][0];
+                                lng = order[q][1];
+                                src = keys[q];
                             }
                         }
+                        if (b3 != null) {
+                            cands = "body3d=" + b3[0] + "," + b3[1];
+                        }
+                        dbg = dbg + " src=" + src;
                         dbg = dbg + " len" + body.length();
                     }
                 } catch (Exception e) {
@@ -533,6 +552,8 @@ public class MainActivity extends BridgeActivity {
                     o.put("lat", lat);
                     o.put("lng", lng);
                     o.put("dbg", dbg);
+                    o.put("src", src);
+                    o.put("cands", cands);
                     return o.toString();
                 } catch (Exception e) {
                     return "";

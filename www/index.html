@@ -1459,7 +1459,9 @@ function placeLabel(p){
   return parts.join(', ');
 }
 function parseCoord(t){
-  var m=/@(-?\d+\.\d+),(-?\d+\.\d+)/.exec(t)||/!3d(-?\d+\.\d+)!4d(-?\d+\.\d+)/.exec(t)||/[?&](?:q|ll|query|destination)=(-?\d+\.\d+)(?:,|%2C)\s*(-?\d+\.\d+)/.exec(t)||/^\s*(-?\d{1,2}\.\d+)\s*[, ]\s*(-?\d{2,3}\.\d+)\s*$/.exec(t);
+  var m=null,r,re=/!3d(-?\d+\.\d+)!4d(-?\d+\.\d+)/g;
+  while((r=re.exec(t)))m=r;
+  m=m||/[?&](?:q|ll|query|destination)=(-?\d+\.\d+)(?:,|%2C)\s*(-?\d+\.\d+)/.exec(t)||/^\s*(-?\d{1,2}\.\d+)\s*[, ]\s*(-?\d{2,3}\.\d+)\s*$/.exec(t)||/@(-?\d+\.\d+),(-?\d+\.\d+)/.exec(t);
   if(!m)return null;
   var la=parseFloat(m[1]),lo=parseFloat(m[2]);
   if(la<-5||la>10||lo<95||lo>121)return null;
@@ -2728,7 +2730,12 @@ function useResolved(o,quiet){
   var tries=0;
   (function go(){
     if(!me&&tries++<40){setTimeout(go,500);return}
-    if(c){$('#results').hidden=true;setDestination(c.lat,c.lng,name||'Lokasi dikongsi');return}
+    if(c){
+      $('#results').hidden=true;setDestination(c.lat,c.lng,name||'Lokasi dikongsi');
+      var sr=o.src||'';
+      if(sr==='urlat'||sr==='og'||(!sr&&!/!3d/.test(url)))toast('Koordinat anggaran ('+(sr||'link')+'). Kalau tak tepat, cari nama tempat dalam app. '+c.lat.toFixed(5)+','+c.lng.toFixed(5),7000);
+      return;
+    }
     toast('Koordinat tak dijumpai dalam link ('+(o.dbg||'tiada maklumat')+'). Mencari ikut nama...',6000);
     if(name){$('#top').hidden=false;$('#q').value=name;searchByName(name)}
     else showResults([],text);
