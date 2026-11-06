@@ -214,7 +214,6 @@ body.sat #map .maplibregl-canvas{filter:brightness(var(--dim))!important}
   <button class="fab" id="btnTrips" aria-label="Rekod perjalanan">🕘</button>
   <button class="fab" id="btnLoc" aria-label="Lokasi saya">◎</button>
   <button class="fab" id="btnSet" aria-label="Tetapan">⚙</button>
-  <button class="fab" id="btnPower" aria-label="Matikan JOMAPZ"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 3v8"/><path d="M6.4 6.6a8 8 0 1 0 11.2 0"/></svg></button>
 </div>
 
 <div id="ask" class="ov" hidden>
@@ -332,6 +331,7 @@ body.sat #map .maplibregl-canvas{filter:brightness(var(--dim))!important}
     <div class="sw"><span>Lampu isyarat</span><input type="checkbox" id="swSig"></div>
     <div class="sw"><span>Tol di hadapan</span><input type="checkbox" id="swToll"></div>
     <div class="sw"><span>Jalan ditutup / kerja jalan</span><input type="checkbox" id="swInc"></div>
+    <div class="sw"><span>Trafik langsung di peta (merah = sesak)</span><input type="checkbox" id="swTraf"></div>
     <label for="selChip">Tempoh chip di skrin</label>
     <select id="selChip"><option value="3">3 saat</option><option value="5">5 saat</option><option value="10">10 saat</option></select>
 
@@ -391,7 +391,7 @@ var THEME=LS.get('theme','auto');
 var AZ=LS.get('az',true);
 var ZOFF=LS.get('zoff',0);
 var CHIPSEC=LS.get('chipsec',5);
-var SHOW=Object.assign({aes:true,rr:true,sig:true,toll:true,inc:true},LS.get('show',{}));
+var SHOW=Object.assign({aes:true,rr:true,sig:true,toll:true,inc:true,traf:true},LS.get('show',{}));
 var TTKEY=LS.get('ttKey',''),TTBUILT=false;
 var MYCAMS=LS.get('myCams',[]);
 var PL=LS.get('places2',null);
@@ -624,17 +624,27 @@ function setupLayers(){
   if(map.getSource('route'))return;
   map.addSource('route',{type:'geojson',data:RTD});
   map.addSource('alts',{type:'geojson',data:ALTD});
+  addTrafficLayer();
   map.addLayer({id:'alt-line',type:'line',source:'alts',layout:{'line-cap':'round','line-join':'round'},paint:{'line-color':'#8a94a0','line-width':6,'line-opacity':.85}});
   map.addLayer({id:'route-casing',type:'line',source:'route',layout:{'line-cap':'round','line-join':'round'},paint:{'line-color':'#ffffff','line-width':12}});
   map.addLayer({id:'route-line',type:'line',source:'route',layout:{'line-cap':'round','line-join':'round'},paint:{'line-color':'#1a73e8','line-width':7.5}});
   schedulePOI();
+}
+function addTrafficLayer(){
+  try{
+    if(map.getLayer('ttflow'))map.removeLayer('ttflow');
+    if(map.getSource('ttflow'))map.removeSource('ttflow');
+    if(!TTKEY||!SHOW.traf)return;
+    map.addSource('ttflow',{type:'raster',tiles:['https://api.tomtom.com/traffic/map/4/tile/flow/relative/{z}/{x}/{y}.png?key='+encodeURIComponent(TTKEY)+'&tileSize=256'],tileSize:256,maxzoom:18,minzoom:6});
+    map.addLayer({id:'ttflow',type:'raster',source:'ttflow',paint:{'raster-opacity':.85}});
+  }catch(e){}
 }
 function setBase(k,temp){
   if(!MSTY[k])return;
   if(!temp){MAPT=k;LS.set('mapt',k)}
   document.body.classList.toggle('sat',k==='sat');
   styleOK=false;
-  map.setStyle(MSTY[k]);
+  map.setStyle(MSTY[k],{diff:false});
 }
 function buildMapType(){
   var box=$('#mtList');box.innerHTML='';
@@ -655,6 +665,7 @@ function initMap(){
   var el=makeMarker();accEl=el.querySelector('#acc');
   meMarker=new maplibregl.Marker({element:el,rotationAlignment:'map',pitchAlignment:'map'}).setLngLat([101.6869,3.139]);
   map.on('style.load',setupLayers);
+  map.on('styledata',function(){try{if(map.isStyleLoaded()&&!map.getSource('route'))setupLayers()}catch(e){}});
   map.on('error',function(){if(!styleOK&&MAPT!=='osm'&&!map._fb){map._fb=1;toast('Peta vektor tak dapat dimuat. Guna peta standard.',3500);setBase('osm',true)}});
   setTimeout(function(){if(!styleOK&&!map._fb&&MAPT==='vec'){map._fb=1;setBase('osm',true)}},9000);
   map.on('touchstart',function(){touching=true});
@@ -1345,7 +1356,34 @@ function searchNominatim(text){
     return a.map(function(x){var p=(x.display_name||'').split(', ');return {lat:parseFloat(x.lat),lng:parseFloat(x.lon),name:x.name||p[0],label:p.slice(0,4).join(', ')}});
   });
 }
+function searchTT(text){
+  var u='https://api.tomtom.com/search/2/search/'+encodeURIComponent(text)+'.json?key='+encodeURIComponent(TTKEY)+'&countrySet=MY&limit=8&language=en-GB&idxSet=POI,PAD,Str,Geo,Addr';
+  if(me)u+='&lat='+me.lat.toFixed(5)+'&lon='+me.lng.toFixed(5);
+  return fetch(u).then(function(r){if(!r.ok)throw new Error('tt '+r.status);return r.json()}).then(function(j){
+    return (j.results||[]).filter(function(x){return x.position}).map(function(x){
+      var nm=(x.poi&&x.poi.name)||(x.address&&(x.address.streetName||x.address.municipality))||'';
+      var fa=(x.address&&x.address.freeformAddress)||'';
+      return {lat:x.position.lat,lng:x.position.lon,name:nm||fa.split(',')[0],label:(nm&&fa&&fa.indexOf(nm)!==0?nm+', ':'')+fa};
+    });
+  });
+}
+function mergeRes(a,b){
+  var out=a.slice();
+  b.forEach(function(x){
+    if(!out.some(function(o){return Math.abs(o.lat-x.lat)<0.0006&&Math.abs(o.lng-x.lng)<0.0006}))out.push(x);
+  });
+  return out.slice(0,8);
+}
 function searchByName(text){
+  var p1=TTKEY?searchTT(text).catch(function(){return []}):Promise.resolve([]);
+  var p2=searchPhoton(text).catch(function(){return []});
+  Promise.all([p1,p2]).then(function(x){
+    var m=mergeRes(x[0],x[1]);
+    if(m.length)return m;
+    return searchNominatim(text).catch(function(){return []});
+  }).then(function(r){showResults(r,text)}).catch(function(){showResults([],text)});
+}
+function searchByNameOld(text){
   searchPhoton(text).then(function(r){
     if(r.length)return r;
     return searchNominatim(text).catch(function(){return []});
@@ -2099,18 +2137,17 @@ function histSync(){
   else if(!a&&hpush){hpush=false;ignorePop=true;try{history.back()}catch(e){ignorePop=false}}
 }
 function shutdownApp(){
-  askYes('Matikan JOMAPZ sepenuhnya? Navigasi, GPS dan suara akan berhenti.',function(){
-    if(navActive){navActive=false;saveTrip()}
-    clearTrip();
-    stopWatch();keepScreenOn(false);stopSpeak();
-    toast('Menutup JOMAPZ...',1500);
-    setTimeout(function(){
-      try{if(window.JomapzNative&&window.JomapzNative.quit){window.JomapzNative.quit();return}}catch(e){}
-      try{if(APP&&APP.exitApp){APP.exitApp();return}}catch(e){}
-      try{if(APP&&APP.minimizeApp){APP.minimizeApp();toast('Tidak dapat tutup sepenuhnya. App dikecilkan.',3000);return}}catch(e){}
-      toast('Tutup app secara manual',3000);
-    },150);
-  });
+  function sd(f){try{f()}catch(e){}}
+  toast('Menutup JOMAPZ...',1500);
+  sd(function(){if(navActive){navActive=false;saveTrip()}});
+  sd(clearTrip);sd(stopWatch);sd(function(){keepScreenOn(false)});sd(stopSpeak);
+  var N=window.JomapzNative;
+  setTimeout(function(){
+    try{if(N&&N.quit){N.quit();return}}catch(e){}
+    try{if(APP&&APP.exitApp){APP.exitApp();return}}catch(e){}
+    try{if(APP&&APP.minimizeApp){APP.minimizeApp();toast('Tidak dapat tutup sepenuhnya. App dikecilkan.',3000);return}}catch(e){}
+    toast('Tutup app secara manual',3000);
+  },100);
 }
 var splashT0=Date.now();
 function hideSplash(){var s=$('#splash');if(!s||s._h)return;s._h=1;s.classList.add('out');setTimeout(function(){if(s.parentNode)s.parentNode.removeChild(s)},700)}
@@ -2450,7 +2487,7 @@ function openSettings(){
   $('#selTheme').value=THEME;$('#swAZ').checked=AZ;$('#selZ').value=String(ZOFF);
   $('#swAes').checked=!!SHOW.aes;$('#swRr').checked=!!SHOW.rr;$('#swSig').checked=!!SHOW.sig;$('#swToll').checked=!!SHOW.toll;
   $('#selChip').value=String(CHIPSEC);
-  $('#swInc').checked=!!SHOW.inc;$('#ttKey').value=TTBUILT?'':TTKEY;$('#ttKey').placeholder=TTBUILT?'Key dalam app sudah aktif (dari repo)':'Kosongkan jika tak guna';$('#swAlways').checked=ALWAYS;
+  $('#swInc').checked=!!SHOW.inc;$('#swTraf').checked=!!SHOW.traf;$('#ttKey').value=TTBUILT?'':TTKEY;$('#ttKey').placeholder=TTBUILT?'Key dalam app sudah aktif (dari repo)':'Kosongkan jika tak guna';$('#swAlways').checked=ALWAYS;
   $('#tolNote').textContent=TOL.updated?('Harga tol rujukan dikemas kini: '+TOL.updated+'. Sumber: motorist.my. Semak papan tanda tol untuk harga sebenar.'):'Jadual harga tol belum diisi.';
   var dv=$('#verNote');
   if(dv&&DATA){dv.setAttribute('data-d','1')}
@@ -2461,9 +2498,10 @@ function saveSettings(){
   VOICE=$('#swVoice').checked;DIM=$('#swDim').checked;LANG=$('#selLang').value;
   VEH=$('#selVeh').value;setVeh(VEH,true);PREF=$('#selPref').value;HWY=$('#swHwy').checked;
   THEME=$('#selTheme').value;AZ=$('#swAZ').checked;ZOFF=parseFloat($('#selZ').value)||0;
-  SHOW={aes:$('#swAes').checked,rr:$('#swRr').checked,sig:$('#swSig').checked,toll:$('#swToll').checked,inc:$('#swInc').checked};
+  SHOW={aes:$('#swAes').checked,rr:$('#swRr').checked,sig:$('#swSig').checked,toll:$('#swToll').checked,inc:$('#swInc').checked,traf:$('#swTraf').checked};
   CHIPSEC=parseInt($('#selChip').value,10)||5;
   var tk=$('#ttKey').value.trim();if(tk||!TTBUILT){TTKEY=tk;LS.set('ttKey',TTKEY)}
+  try{if(map.isStyleLoaded())addTrafficLayer();if(map.getLayer('ttflow')&&map.getLayer('alt-line'))map.moveLayer('ttflow','alt-line')}catch(e){}
   var al=$('#swAlways').checked;LS.set('always',al);
   if(al!==ALWAYS){ALWAYS=al;if(!navActive)startWatch(ALWAYS)}
   VENG=$('#selVeng').value;LS.set('veng2',VENG);LS.set('voice',VOICE);LS.set('dim',DIM);LS.set('lang2',LANG);
@@ -2531,7 +2569,7 @@ var EN_FULL={
 
 Object.assign(EN_FULL,{
 'Alternatif':'Alternative',
-'Tempat di peta':'Places on map','Enjin suara':'Voice engine','Auto: suara Google (natural) + cadangan offline':'Auto: Google voice (natural) + offline fallback','Offline sahaja (suara robot dalam app)':'Offline only (robotic in-app voice)','Auto: guna suara Google yang natural (perlu internet). Ayat arahan disimpan dalam phone selepas kali pertama dan dimuat awal semasa perjalanan, jadi masih jalan bila internet lemah. Kalau tiada internet, app guna suara robot yang terbina dalam app.':'Auto: uses the natural Google voice (needs internet). Phrases are saved on the phone after first use and pre-loaded during the trip, so it keeps working on weak signal. With no internet the app uses the built-in robotic voice.','Suara sistem phone':'Phone system voice','Pilih tempat yang mahu dipaparkan pada peta. Lalai: semua dimatikan supaya skrin kemas.':'Choose which places to show on the map. Default: all off to keep the screen clean.',
+'Tempat di peta':'Places on map','Trafik langsung di peta (merah = sesak)':'Live traffic on map (red = congested)','Enjin suara':'Voice engine','Auto: suara Google (natural) + cadangan offline':'Auto: Google voice (natural) + offline fallback','Offline sahaja (suara robot dalam app)':'Offline only (robotic in-app voice)','Auto: guna suara Google yang natural (perlu internet). Ayat arahan disimpan dalam phone selepas kali pertama dan dimuat awal semasa perjalanan, jadi masih jalan bila internet lemah. Kalau tiada internet, app guna suara robot yang terbina dalam app.':'Auto: uses the natural Google voice (needs internet). Phrases are saved on the phone after first use and pre-loaded during the trip, so it keeps working on weak signal. With no internet the app uses the built-in robotic voice.','Suara sistem phone':'Phone system voice','Pilih tempat yang mahu dipaparkan pada peta. Lalai: semua dimatikan supaya skrin kemas.':'Choose which places to show on the map. Default: all off to keep the screen clean.',
 'Matikan JOMAPZ sepenuhnya? Navigasi, GPS dan suara akan berhenti.':'Shut down JOMAPZ completely? Navigation, GPS and voice will stop.','OK':'OK',
 'Tambah':'Add','Simpan tempat':'Save place','Ubah tempat':'Edit place','Nama':'Name','Ikon':'Icon','Lokasi':'Location','Contoh: Rumah mak':'Example: Mum\'s house',
 '📍 Guna lokasi saya sekarang':'📍 Use my current location','Padam':'Delete','Simpan':'Save','Jenis peta':'Map type','Lalai':'Default','Standard OSM':'Standard OSM',
@@ -2616,9 +2654,9 @@ window.__sharePing=function(){try{if(window.JomapzNative){var s=JomapzNative.tak
 function runDiag(){
   var out=$('#diag');out.textContent='Menguji...';
   var tests=[
-    ['Overpass 1 (cadangan)',function(){return diagFetch(OV_MIRRORS[0],{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:'data='+encodeURIComponent('[out:json][timeout:8];node(1);out;')})}],
-    ['Overpass 2 (cadangan)',function(){return diagFetch(OV_MIRRORS[1],{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:'data='+encodeURIComponent('[out:json][timeout:8];node(1);out;')})}],
-    ['Overpass 3 (cadangan)',function(){return diagFetch(OV_MIRRORS[2],{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:'data='+encodeURIComponent('[out:json][timeout:8];node(1);out;')})}],
+    ['TomTom route',function(){return TTKEY?diagFetch('https://api.tomtom.com/routing/1/calculateRoute/3.139,101.687:3.15,101.70/json?key='+encodeURIComponent(TTKEY)+'&traffic=true'):Promise.reject('tiada key')}],
+    ['TomTom search',function(){return TTKEY?diagFetch('https://api.tomtom.com/search/2/search/puchong.json?key='+encodeURIComponent(TTKEY)+'&countrySet=MY&limit=1'):Promise.reject('tiada key')}],
+    ['TomTom traffic tile',function(){return TTKEY?diagFetch('https://api.tomtom.com/traffic/map/4/tile/flow/relative/11/1613/1017.png?key='+encodeURIComponent(TTKEY)+'&tileSize=256'):Promise.reject('tiada key')}],
     ['Carian Photon',function(){return diagFetch('https://photon.komoot.io/api/?q=puchong&limit=1')}],
     ['Nama jalan Photon',function(){return diagFetch('https://photon.komoot.io/reverse?lat=2.9667&lon=101.5797')}],
     ['Laluan Valhalla',function(){return diagFetch('https://valhalla1.openstreetmap.de/status')}],
@@ -2697,7 +2735,7 @@ document.addEventListener('DOMContentLoaded',function(){
     $('#updTxt').textContent=L('Memuat turun... 0%','Downloading... 0%');
     try{N.installApk(updInfo.url)}catch(e){updDone('err',0,String(e))}
   };
-  fetch('config.json').then(function(r){return r.ok?r.json():null}).then(function(j){if(j&&j.tt&&!TTKEY){TTKEY=j.tt;TTBUILT=true}}).catch(function(){});
+  fetch('config.json').then(function(r){return r.ok?r.json():null}).then(function(j){if(j&&j.tt&&!TTKEY){TTKEY=j.tt;TTBUILT=true}if(TTKEY){try{if(map&&map.isStyleLoaded())addTrafficLayer()}catch(e){}}}).catch(function(){});
   fetch('tol.json').then(function(r){return r.ok?r.json():null}).then(function(j){if(j&&j.plazas)TOL=j}).catch(function(){});
   applyTheme();
   setInterval(applyTheme,60000);
@@ -2749,7 +2787,6 @@ document.addEventListener('DOMContentLoaded',function(){
   $('#avoidToll').onchange=recompute;
   $('#avoidHwy').onchange=recompute;
   startWatch(ALWAYS);
-  $('#btnPower').onclick=shutdownApp;
   $('#btnShutdown').onclick=shutdownApp;
   $('#btnCam').onclick=function(){if(me)markCamera(me.lat,me.lng);else toast('Menunggu GPS...')};
   $('#btnResumeNo').onclick=function(){$('#resume').hidden=true;clearTrip()};
