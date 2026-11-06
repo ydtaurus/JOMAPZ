@@ -45,7 +45,7 @@ jobs:
           curl -fL --retry 3 -o malaysia.osm.pbf https://download.geofabrik.de/asia/malaysia-singapore-brunei-latest.osm.pbf
           ls -l malaysia.osm.pbf
           mkdir -p www/data
-          PROBE=1 python3 scripts/build_osm_data.py malaysia.osm.pbf www/data/osm.json
+          python3 scripts/build_osm_data.py malaysia.osm.pbf www/data/osm.json
           ls -l www/data/osm.json
 
       - name: Tandatangan tetap (supaya kemas kini boleh dipasang di atas versi lama)

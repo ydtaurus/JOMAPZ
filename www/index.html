@@ -115,7 +115,7 @@ body.night .cc.inc{background:#4a1f1c;color:#ffd4d0;border-color:#7a2b26}
 
 /* ===== kemasan UI v2 ===== */
 #rtDlg{z-index:65}body:not(.nav) #lim{display:none!important}
-#upd{z-index:80}#ask{z-index:70}#placeDlg{z-index:60}#mapType{z-index:60}
+#roadFix{z-index:62}#upd{z-index:80}#ask{z-index:70}#placeDlg{z-index:60}#mapType{z-index:60}
 :root{--r:16px;--sh:0 4px 16px rgba(0,0,0,.22)}
 body{font-family:Roboto,system-ui,-apple-system,"Segoe UI",sans-serif;-webkit-font-smoothing:antialiased}
 #searchRow{border-radius:var(--r);box-shadow:var(--sh);align-items:center}
@@ -222,6 +222,15 @@ body.sat #map .maplibregl-canvas{filter:brightness(var(--dim))!important}
   <div class="box">
     <h3 id="askT"></h3>
     <div class="row"><button class="btn s" id="askNo">Batal</button><button class="btn p" id="askYes">OK</button></div>
+  </div>
+</div>
+
+<div id="roadFix" class="ov" hidden>
+  <div class="box">
+    <h3>Nama jalan di sini</h3>
+    <input id="rfName" type="text" placeholder="Contoh: Jalan TPP 5" autocomplete="off">
+    <p class="note">Data peta kadang-kadang tiada nama untuk lorong tertentu. Nama ini disimpan dalam phone dan digunakan dalam radius kira-kira 90 m.</p>
+    <div class="row"><button class="btn d" id="rfDel">Padam</button><button class="btn s" id="rfNo">Batal</button><button class="btn p" id="rfSave">Simpan</button></div>
   </div>
 </div>
 
@@ -428,6 +437,7 @@ if(!PL){
   if(ch)LS.set('places2',PL);
 })();
 var RECENT=LS.get('recent',[]);
+var ROADFIX=LS.get('roadFix',[]);
 var MAPT=LS.get('mapt','vec');
 var TRIPS=LS.get('trips',[]);
 var OV_MIRRORS=['https://overpass-api.de/api/interpreter','https://overpass.private.coffee/api/interpreter','https://overpass.kumi.systems/api/interpreter'],ovI=0;
@@ -992,10 +1002,37 @@ function vecRoad(lat,lng){
         }
       });
     });
-    return (best&&bd<=18)?{name:best.name,ref:best.ref,d:bd}:null;
+    return (best&&bd<=40)?{name:best.name,ref:best.ref,d:bd}:null;
   }catch(e){return null}
 }
+function fixedRoad(lat,lng){
+  var b=null,bd=1e9;
+  ROADFIX.forEach(function(r){var d=haversine(lat,lng,r.lat,r.lng);if(d<r.r&&d<bd){bd=d;b=r}});
+  return b;
+}
+var rfDlg=null;
+function openRoadFix(){
+  if(!me)return;
+  var f=fixedRoad(me.lat,me.lng);
+  $('#rfName').value=f?f.name:(roadText&&!/tidak|unknown|tanpa nama/i.test(roadText)?roadText:'');
+  $('#rfDel').hidden=!f;
+  $('#roadFix').hidden=false;
+  rfDlg={lat:me.lat,lng:me.lng,f:f};
+  setTimeout(function(){try{$('#rfName').focus()}catch(e){}},200);
+}
+function saveRoadFix(){
+  var n=$('#rfName').value.trim();
+  if(rfDlg&&rfDlg.f)ROADFIX=ROADFIX.filter(function(x){return x!==rfDlg.f});
+  if(n&&rfDlg)ROADFIX.push({lat:rfDlg.lat,lng:rfDlg.lng,r:90,name:n});
+  LS.set('roadFix',ROADFIX);
+  $('#roadFix').hidden=true;rfDlg=null;
+  lastRoad={lat:0,lng:0,t:0};
+  if(me)lookupRoad(me.lat,me.lng);
+  toast(L('Nama jalan disimpan','Road name saved'),2000);
+}
 function lookupRoad(lat,lng){
+  var fx=fixedRoad(lat,lng);
+  if(fx){setRoadInfo(fx.name,'',0,0);return}
   var vr=vecRoad(lat,lng);
   if(vr){
     var l0=ROADSREADY?localRoad(lat,lng):null,ok=l0&&l0.d<=14&&l0.w[0]===vr.name;
@@ -2209,7 +2246,7 @@ function resumeTrip(){
     else toast('GPS tak ditemui')
   })();
 }
-var BACKIDS=['#upd','#ask','#rtDlg','#placeDlg','#mapType','#settings','#trips','#resume'];
+var BACKIDS=['#upd','#ask','#roadFix','#rtDlg','#placeDlg','#mapType','#settings','#trips','#resume'];
 function backClose(){
   if(!$('#prep').hidden)return true;
   var i;
@@ -2630,7 +2667,7 @@ var EN_FULL={
 
 Object.assign(EN_FULL,{
 'Alternatif':'Alternative',
-'Tempat di peta':'Places on map','Kamera laju yang kau tanda':'Speed cameras you marked','Tandakan kamera laju di lokasi ini?':'Mark a speed camera at this location?','Tiada kamera ditanda.':'No cameras marked.','Laluan':'Routes','Tukar laluan':'Change route','Mengira laluan dari lokasi semasa...':'Calculating routes from your location...','Trafik langsung di peta (merah = sesak)':'Live traffic on map (red = congested)','Enjin suara':'Voice engine','Auto: suara Google (natural)':'Auto: Google voice (natural)','Auto: guna suara Google yang natural. Semua arahan perjalanan dimuat turun awal semasa kau tekan Mula, jadi suara masih jalan bila internet terputus di tengah jalan. Kalau gagal, app guna suara sistem phone.':'Auto: uses the natural Google voice. All trip phrases are downloaded when you tap Start, so voice keeps working if the internet drops mid-trip. If it fails, the app uses the phone system voice.','Suara sistem phone':'Phone system voice','Pilih tempat yang mahu dipaparkan pada peta. Lalai: semua dimatikan supaya skrin kemas.':'Choose which places to show on the map. Default: all off to keep the screen clean.',
+'Tempat di peta':'Places on map','Nama jalan di sini':'Road name here','Contoh: Jalan TPP 5':'Example: Jalan TPP 5','Data peta kadang-kadang tiada nama untuk lorong tertentu. Nama ini disimpan dalam phone dan digunakan dalam radius kira-kira 90 m.':'Map data sometimes has no name for certain lanes. This name is saved on your phone and used within about 90 m.','Nama jalan disimpan':'Road name saved','Kamera laju yang kau tanda':'Speed cameras you marked','Tandakan kamera laju di lokasi ini?':'Mark a speed camera at this location?','Tiada kamera ditanda.':'No cameras marked.','Laluan':'Routes','Tukar laluan':'Change route','Mengira laluan dari lokasi semasa...':'Calculating routes from your location...','Trafik langsung di peta (merah = sesak)':'Live traffic on map (red = congested)','Enjin suara':'Voice engine','Auto: suara Google (natural)':'Auto: Google voice (natural)','Auto: guna suara Google yang natural. Semua arahan perjalanan dimuat turun awal semasa kau tekan Mula, jadi suara masih jalan bila internet terputus di tengah jalan. Kalau gagal, app guna suara sistem phone.':'Auto: uses the natural Google voice. All trip phrases are downloaded when you tap Start, so voice keeps working if the internet drops mid-trip. If it fails, the app uses the phone system voice.','Suara sistem phone':'Phone system voice','Pilih tempat yang mahu dipaparkan pada peta. Lalai: semua dimatikan supaya skrin kemas.':'Choose which places to show on the map. Default: all off to keep the screen clean.',
 'Matikan JOMAPZ sepenuhnya? Navigasi, GPS dan suara akan berhenti.':'Shut down JOMAPZ completely? Navigation, GPS and voice will stop.','OK':'OK',
 'Tambah':'Add','Simpan tempat':'Save place','Ubah tempat':'Edit place','Nama':'Name','Ikon':'Icon','Lokasi':'Location','Contoh: Rumah mak':'Example: Mum\'s house',
 '📍 Guna lokasi saya sekarang':'📍 Use my current location','Padam':'Delete','Simpan':'Save','Jenis peta':'Map type','Lalai':'Default','Standard OSM':'Standard OSM',
@@ -2825,7 +2862,13 @@ document.addEventListener('DOMContentLoaded',function(){
   $('#btnTest').onclick=testVoice;
   $('#btnTrips').onclick=openTrips;
   $('#btnTripsClose').onclick=function(){$('#trips').hidden=true};
-  $('#road').onclick=shareLocation;
+  var rfT=null,rfFired=false;
+  $('#road').addEventListener('touchstart',function(){rfT=setTimeout(function(){rfT=null;rfFired=true;openRoadFix()},650)},{passive:true});
+  ['touchend','touchmove','touchcancel'].forEach(function(ev){$('#road').addEventListener(ev,function(){if(rfT){clearTimeout(rfT);rfT=null}},{passive:true})});
+  $('#road').onclick=function(){if(rfFired){rfFired=false;return}shareLocation()};
+  $('#rfSave').onclick=saveRoadFix;
+  $('#rfNo').onclick=function(){$('#roadFix').hidden=true;rfDlg=null};
+  $('#rfDel').onclick=function(){$('#rfName').value='';saveRoadFix()};
   $('#btnStart').onclick=beginTrip;
   $('#btnCancel').onclick=function(){$('#sheet').hidden=true;$('#top').hidden=false;setMode(false,false);clearRoute();setFollow(true)};
   $('#btnEnd').onclick=endNav;

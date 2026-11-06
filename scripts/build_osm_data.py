@@ -1,14 +1,7 @@
 """Bina data OSM Malaysia (POI, lampu isyarat, kamera, data lorong) ke www/data/osm.json.
 Guna: python scripts/build_osm_data.py malaysia.osm.pbf www/data/osm.json"""
-import json, sys, datetime, os, math
+import json, sys, datetime
 import osmium
-
-PROBE = os.environ.get('PROBE')
-PLAT, PLNG = 2.96685, 101.57969
-
-
-def _dm(a, b):
-    return math.hypot((a - PLAT) * 110540, (b - PLNG) * 111320 * math.cos(PLAT * math.pi / 180))
 
 INFRA = {
     "fuel": lambda t: t.get("amenity") == "fuel",
@@ -89,10 +82,6 @@ class H(osmium.SimpleHandler):
         if not n.tags or not n.location.valid():
             return
         t = {tg.k: tg.v for tg in n.tags}
-        if PROBE:
-            nm = (t.get('name') or '').lower()
-            if ('meng kah' in nm or 'mka' in nm) and _dm(n.location.lat, n.location.lon) < 3000:
-                print('PROBE-POI', n.location.lat, n.location.lon, t.get('name'), t.get('shop'), t.get('office'), int(_dm(n.location.lat, n.location.lon)))
         for cat, fn in INFRA.items():
             if cat == "lorong":
                 continue
@@ -103,19 +92,6 @@ class H(osmium.SimpleHandler):
         if not w.tags:
             return
         t = {tg.k: tg.v for tg in w.tags}
-        if PROBE:
-            try:
-                pp = [(nd.location.lat, nd.location.lon) for nd in w.nodes if nd.location.valid()]
-            except Exception:
-                pp = []
-            if pp:
-                nm = (t.get('name') or '').lower()
-                if 'highway' in t:
-                    dd = min(_dm(a, b) for a, b in pp)
-                    if dd <= 400:
-                        print('PROBE-ROAD', int(dd), t.get('name'), t.get('ref'), t.get('highway'), t.get('maxspeed'), pp[0])
-                if ('meng kah' in nm or 'mka' in nm or 'jalan tpp 5' in nm) and _dm(pp[0][0], pp[0][1]) < 4000:
-                    print('PROBE-WAY', pp[0], t.get('name'), t.get('highway'), t.get('building'), t.get('shop'), t.get('office'), int(_dm(pp[0][0], pp[0][1])))
         hit = [c for c, fn in INFRA.items() if c not in ("sig",) and fn(t)]
         has_lanes = "highway" in t and any(k.startswith("turn:lanes") for k in t)
         hw = HW_CODE.get(t.get("highway", ""), 0)
