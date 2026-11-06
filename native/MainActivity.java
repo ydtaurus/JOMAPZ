@@ -17,6 +17,8 @@ import java.util.regex.Pattern;
 import org.json.JSONObject;
 
 public class MainActivity extends BridgeActivity {
+    private android.location.LocationManager lm;
+    private android.location.LocationListener gl;
     private android.media.MediaPlayer mp;
     private volatile int playGen = 0;
     private final ExecutorService pool = Executors.newFixedThreadPool(3);
@@ -297,6 +299,54 @@ public class MainActivity extends BridgeActivity {
                     doInstall(url);
                 }
             });
+        }
+
+        @JavascriptInterface
+        public boolean startGps() {
+            runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+                    try {
+                        if (gl != null) return;
+                        lm = (android.location.LocationManager) getSystemService(android.content.Context.LOCATION_SERVICE);
+                        if (lm == null) return;
+                        gl = new android.location.LocationListener() {
+                            @Override
+                            public void onLocationChanged(android.location.Location l) {
+                                int sats = 0;
+                                try {
+                                    android.os.Bundle ex = l.getExtras();
+                                    if (ex != null) sats = ex.getInt("satellites", 0);
+                                } catch (Exception e) {
+                                }
+                                final String js = "window.__gps&&window.__gps(" + l.getLatitude() + "," + l.getLongitude() + ","
+                                        + (l.hasAccuracy() ? l.getAccuracy() : 999) + "," + (l.hasSpeed() ? l.getSpeed() : -1) + ","
+                                        + (l.hasBearing() ? l.getBearing() : -1) + "," + l.getTime() + "," + sats + ")";
+                                try {
+                                    getBridge().getWebView().evaluateJavascript(js, null);
+                                } catch (Exception e) {
+                                }
+                            }
+
+                            @Override
+                            public void onStatusChanged(String p, int s, android.os.Bundle b) {
+                            }
+
+                            @Override
+                            public void onProviderEnabled(String p) {
+                            }
+
+                            @Override
+                            public void onProviderDisabled(String p) {
+                            }
+                        };
+                        lm.requestLocationUpdates(android.location.LocationManager.GPS_PROVIDER, 1000L, 0f, gl, android.os.Looper.getMainLooper());
+                    } catch (Exception e) {
+                        gl = null;
+                    }
+                }
+            });
+            return true;
         }
 
         @JavascriptInterface

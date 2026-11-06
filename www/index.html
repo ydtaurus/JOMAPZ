@@ -771,10 +771,15 @@ function stopWatch(){
   if(webWatch!==null){try{navigator.geolocation.clearWatch(webWatch)}catch(e){}webWatch=null}
   watchOn=false;
 }
-var bestFix={t:0,acc:9999,at:0,src:''};
-function gotFix(src,p){
+var bestFix={t:0,acc:9999,at:0,src:'',sat:0},gpsAt=0,gpsAcc=999;
+window.__gps=function(lat,lng,acc,sp,hd,t,sat){
+  gotFix('gps',{coords:{latitude:lat,longitude:lng,accuracy:acc,speed:sp>=0?sp:null,heading:hd>=0?hd:null},timestamp:t},sat);
+};
+function gotFix(src,p,sat){
   var c=p&&p.coords;if(!c||c.latitude===null||c.latitude===undefined)return;
   var now=Date.now(),t=p.timestamp||now,acc=c.accuracy||999;
+  if(src!=='gps'&&now-gpsAt<8000&&gpsAcc<=60)return;
+  if(src==='gps'&&acc<=60){gpsAt=now;gpsAcc=acc}
   var starving=!me||now-bestFix.at>10000;
   if(!starving){
     if(now-t>20000)return;
@@ -783,10 +788,15 @@ function gotFix(src,p){
     if(acc>100)return;
     if(haversine(me.lat,me.lng,c.latitude,c.longitude)>400&&acc>25&&now-bestFix.at<4000)return;
   }
-  bestFix={t:t,acc:acc,at:now,src:src};
+  bestFix={t:t,acc:acc,at:now,src:src,sat:sat||0};
   onPos(p);
 }
+function fixLabel(){
+  if(bestFix.src==='gps')return ' · GPS'+(bestFix.sat?' '+bestFix.sat+' sat':'');
+  return ' · '+L('anggaran, tiada satelit','estimated, no satellite');
+}
 function nudgeGps(){
+  try{if(window.JomapzNative&&window.JomapzNative.startGps)window.JomapzNative.startGps()}catch(e){}
   try{navigator.geolocation.getCurrentPosition(function(p){gotFix('web',p)},function(){},{enableHighAccuracy:true,maximumAge:0,timeout:12000})}catch(e){}
 }
 function startWatch(bg){
@@ -835,7 +845,7 @@ function onPos(p){
   lastFix={lat:c.latitude,lng:c.longitude,t:t};
   if(hd!==null&&sp>0.9){heading=heading===null?hd:(heading+0.45*angDiff(heading,hd)+360)%360}
   $('#spd').textContent=kmh;
-  $('#roadCoord').textContent=me.lat.toFixed(5)+', '+me.lng.toFixed(5)+(me.acc?'  ±'+Math.round(me.acc)+' m':'')+(bestFix.src?' · '+bestFix.src:'');
+  $('#roadCoord').textContent=me.lat.toFixed(5)+', '+me.lng.toFixed(5)+(me.acc?'  ±'+Math.round(me.acc)+' m':'')+fixLabel();
   tgt={lat:me.lat,lng:me.lng,at:Date.now(),sp:me.sp};
   if(first){disp={lat:me.lat,lng:me.lng};meMarker.setLngLat([me.lng,me.lat])}
   if(!meMarker._added){meMarker.addTo(map);meMarker._added=true}
@@ -946,10 +956,8 @@ function setRoadInfo(name,ref,spd,hw){
   $('#roadName').textContent=roadText;
 }
 function lookupRoad(lat,lng){
-  if(ROADSREADY){
-    var lr=localRoad(lat,lng);
-    if(lr){setRoadInfo(lr.w[0],lr.w[1],lr.w[2],lr.w[3]);return}
-  }
+  var lr=ROADSREADY?localRoad(lat,lng):null;
+  if(lr&&(lr.d<=14||!TTKEY)){setRoadInfo(lr.w[0],lr.w[1],lr.w[2],lr.w[3]);return}
   if(TTKEY&&(!lastTT.t||Date.now()-lastTT.t>12000||haversine(lastTT.lat,lastTT.lng,lat,lng)>50)){
     roadBusy=true;lastTT={lat:lat,lng:lng,t:Date.now()};
     fetch('https://api.tomtom.com/search/2/reverseGeocode/'+lat.toFixed(5)+','+lng.toFixed(5)+'.json?key='+encodeURIComponent(TTKEY)+'&radius=60&returnSpeedLimit=true&language=en-GB')
@@ -963,10 +971,11 @@ function lookupRoad(lat,lng){
       setRoadInfo(nm,a.routeNumbers&&a.routeNumbers[0]||'',spd||0,0);
       if(!spd){limit={val:null,known:false};$('#lim').hidden=true}
       roadBusy=false;
-    }).catch(function(){roadBusy=false;lookupRoadOv(lat,lng)});
+    }).catch(function(){roadBusy=false;if(lr)setRoadInfo(lr.w[0],lr.w[1],lr.w[2],lr.w[3]);else lookupRoadOv(lat,lng)});
     return;
   }
   if(TTKEY&&lastTT.t&&roadText){return}
+  if(lr){setRoadInfo(lr.w[0],lr.w[1],lr.w[2],lr.w[3]);return}
   lookupRoadOv(lat,lng);
 }
 var lastTT={lat:0,lng:0,t:0};
@@ -1409,7 +1418,7 @@ function searchNominatim(text){
   });
 }
 function searchTT(text){
-  var u='https://api.tomtom.com/search/2/search/'+encodeURIComponent(text)+'.json?key='+encodeURIComponent(TTKEY)+'&countrySet=MY&limit=8&language=en-GB&idxSet=POI,PAD,Str,Geo,Addr';
+  var u='https://api.tomtom.com/search/2/search/'+encodeURIComponent(text)+'.json?key='+encodeURIComponent(TTKEY)+'&countrySet=MY&limit=10&language=en-GB&idxSet=POI,PAD,Str,Xstr,Geo,Addr&minFuzzyLevel=1&maxFuzzyLevel=2';
   if(me)u+='&lat='+me.lat.toFixed(5)+'&lon='+me.lng.toFixed(5);
   return fetch(u).then(function(r){if(!r.ok)throw new Error('tt '+r.status);return r.json()}).then(function(j){
     return (j.results||[]).filter(function(x){return x.position}).map(function(x){
@@ -1424,13 +1433,14 @@ function mergeRes(a,b){
   b.forEach(function(x){
     if(!out.some(function(o){return Math.abs(o.lat-x.lat)<0.0006&&Math.abs(o.lng-x.lng)<0.0006}))out.push(x);
   });
-  return out.slice(0,8);
+  return out.slice(0,10);
 }
 function searchByName(text){
   var p1=TTKEY?searchTT(text).catch(function(){return []}):Promise.resolve([]);
   var p2=searchPhoton(text).catch(function(){return []});
-  Promise.all([p1,p2]).then(function(x){
-    var m=mergeRes(x[0],x[1]);
+  var p3=searchNominatim(text).catch(function(){return []});
+  Promise.all([p1,p2,p3]).then(function(x){
+    var m=mergeRes(mergeRes(x[0],x[1]),x[2]);
     if(m.length)return m;
     return searchNominatim(text).catch(function(){return []});
   }).then(function(r){showResults(r,text)}).catch(function(){showResults([],text)});
@@ -2798,7 +2808,8 @@ document.addEventListener('DOMContentLoaded',function(){
   map.on('load',splashReady);
   setTimeout(hideSplash,7000);
   setTimeout(restoreTrip,2500);
-  setInterval(function(){if(me&&Date.now()-bestFix.at>15000){nudgeGps();$('#roadCoord').textContent=me.lat.toFixed(5)+', '+me.lng.toFixed(5)+'  · GPS lama'}},5000);
+  setTimeout(function(){try{window.JomapzNative.startGps()}catch(e){}},2500);
+  setInterval(function(){try{if(Date.now()-gpsAt>20000)window.JomapzNative.startGps()}catch(e){}if(me&&Date.now()-bestFix.at>15000){nudgeGps();$('#roadCoord').textContent=me.lat.toFixed(5)+', '+me.lng.toFixed(5)+'  · GPS lama'}},5000);
   document.addEventListener('visibilitychange',function(){if(!document.hidden)nudgeGps()});
   if(/[#&]test/.test(location.hash)){
     window.__t={onPos:onPos,setDestination:setDestination,beginTrip:beginTrip,startNav:startNav,endNav:endNav,applyTheme:applyTheme,sunTimes:sunTimes,
