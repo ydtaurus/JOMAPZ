@@ -1487,9 +1487,9 @@ function showResults(items,text){
   addGoogleRow(box,text);
   box.hidden=false;
 }
-function searchPhoton(text){
+function searchPhoton(text,nb){
   var u='https://photon.komoot.io/api/?q='+encodeURIComponent(text)+'&limit=10&lang=en&bbox=99.5,0.8,119.5,7.5';
-  if(me)u+='&lat='+me.lat+'&lon='+me.lng;
+  if(me&&!nb)u+='&lat='+me.lat+'&lon='+me.lng;
   return fetch(u).then(function(r){if(!r.ok)throw new Error('Carian gagal ('+r.status+')');return r.json()})
   .then(function(j){
     return (j.features||[]).filter(function(f){return !f.properties.countrycode||f.properties.countrycode==='MY'}).slice(0,6).map(function(f){
@@ -1503,9 +1503,9 @@ function searchNominatim(text){
     return a.map(function(x){var p=(x.display_name||'').split(', ');return {lat:parseFloat(x.lat),lng:parseFloat(x.lon),name:x.name||p[0],label:p.slice(0,4).join(', ')}});
   });
 }
-function searchTT(text){
+function searchTT(text,nb){
   var u='https://api.tomtom.com/search/2/search/'+encodeURIComponent(text)+'.json?key='+encodeURIComponent(TTKEY)+'&countrySet=MY&limit=10&language=en-GB&idxSet=POI,PAD,Str,Xstr,Geo,Addr&minFuzzyLevel=1&maxFuzzyLevel=2';
-  if(me)u+='&lat='+me.lat.toFixed(5)+'&lon='+me.lng.toFixed(5);
+  if(me&&!nb)u+='&lat='+me.lat.toFixed(5)+'&lon='+me.lng.toFixed(5);
   return fetch(u).then(function(r){if(!r.ok)throw new Error('tt '+r.status);return r.json()}).then(function(j){
     return (j.results||[]).filter(function(x){return x.position}).map(function(x){
       var nm=(x.poi&&x.poi.name)||(x.address&&(x.address.streetName||x.address.municipality))||'';
@@ -2736,6 +2736,29 @@ function useResolved(o,quiet){
       if(sr==='urlat'||sr==='og'||(!sr&&!/!3d/.test(url)))toast('Koordinat anggaran ('+(sr||'link')+'). Kalau tak tepat, cari nama tempat dalam app. '+c.lat.toFixed(5)+','+c.lng.toFixed(5),7000);
       return;
     }
+    var pm=/\/maps\/place\/([^\/@?]+)/.exec(url),addr='';
+    if(pm){try{addr=decodeURIComponent(pm[1].replace(/\+/g,' '))}catch(e){addr=pm[1].replace(/\+/g,' ')}}
+    if(addr){
+      toast('Link tiada koordinat. Mencari ikut alamat: '+addr,6000);
+      var parts=addr.split(',').map(function(x){return x.trim()}).filter(Boolean);
+      var nm=parts[0]||name,town=parts.slice(-3).join(', ');
+      var qs=[addr,nm+' '+parts.slice(-2).join(' '),parts.slice(1).join(', ')];
+      var jobs=[];
+      qs.forEach(function(q){
+        if(!q)return;
+        if(TTKEY)jobs.push(searchTT(q,true).catch(function(){return []}));
+        jobs.push(searchPhoton(q,true).catch(function(){return []}));
+        jobs.push(searchNominatim(q).catch(function(){return []}));
+      });
+      Promise.all(jobs).then(function(x){
+        var m=[];x.forEach(function(a){m=mergeRes(m,a)});
+        var key=nm.toLowerCase();
+        var hit=m.filter(function(r){return (r.name||'').toLowerCase().indexOf(key)>=0});
+        if(hit.length===1){$('#results').hidden=true;setDestination(hit[0].lat,hit[0].lng,nm);toast('Dijumpai ikut alamat: '+(hit[0].label||nm),6000);return}
+        $('#top').hidden=false;$('#q').value=addr;showResults(m,addr);
+      });
+      return;
+    }
     toast('Koordinat tak dijumpai dalam link ('+(o.dbg||'tiada maklumat')+'). Mencari ikut nama...',6000);
     if(name){$('#top').hidden=false;$('#q').value=name;searchByName(name)}
     else showResults([],text);
@@ -2910,7 +2933,7 @@ document.addEventListener('DOMContentLoaded',function(){
   setInterval(function(){try{if(Date.now()-gpsAt>20000)window.JomapzNative.startGps()}catch(e){}if(me&&Date.now()-bestFix.at>15000){nudgeGps();$('#roadCoord').textContent=me.lat.toFixed(5)+', '+me.lng.toFixed(5)+'  · GPS lama'}},5000);
   document.addEventListener('visibilitychange',function(){if(!document.hidden)nudgeGps()});
   if(/[#&]test/.test(location.hash)){
-    window.__t={onPos:onPos,setDestination:setDestination,beginTrip:beginTrip,startNav:startNav,endNav:endNav,applyTheme:applyTheme,sunTimes:sunTimes,
+    window.__t={useResolved:useResolved,onPos:onPos,setDestination:setDestination,beginTrip:beginTrip,startNav:startNav,endNav:endNav,applyTheme:applyTheme,sunTimes:sunTimes,
       st:function(){return {me:me,heading:heading,route:route,navActive:navActive,zoom:map.getZoom(),bearing:map.getBearing(),chips:chipLive.length,trips:TRIPS.length,night:document.body.classList.contains('night'),next:navNext}},
       map:function(){return map},setTheme:function(v){THEME=v;applyTheme()},setVeh:function(v){VEH=v},
       events:function(){return route&&route.events},warm:function(){return {q:warmQ.length,n:Object.keys(warmed).length}},
