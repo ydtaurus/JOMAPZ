@@ -366,8 +366,18 @@ body.sat #map .maplibregl-canvas{filter:brightness(var(--dim))!important}
 'use strict';
 var $=function(s){return document.querySelector(s)};
 var LS={
-  get:function(k,d){try{var v=localStorage.getItem(k);return v===null?d:JSON.parse(v)}catch(e){return d}},
-  set:function(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}
+  get:function(k,d){
+    var v=null;
+    try{v=localStorage.getItem(k)}catch(e){}
+    if(v===null){try{if(window.JomapzNative&&window.JomapzNative.load){var n=window.JomapzNative.load(k);if(n){v=n;try{localStorage.setItem(k,n)}catch(e){}}}}catch(e){}}
+    if(v===null)return d;
+    try{return JSON.parse(v)}catch(e){return d}
+  },
+  set:function(k,v){
+    var j;try{j=JSON.stringify(v)}catch(e){return}
+    try{localStorage.setItem(k,j)}catch(e){}
+    try{if(window.JomapzNative&&window.JomapzNative.save&&j.length<300000)window.JomapzNative.save(k,j)}catch(e){}
+  }
 };
 var VOICE=LS.get('voice',true);
 var DIM=LS.get('dim',true);
@@ -1983,11 +1993,11 @@ function beginTrip(){
   prepBusy=true;
   $('#p2').textContent='⏳';$('#p3').textContent='⏳';$('#pNote').textContent='Selepas ini navigasi terus berjalan walaupun internet terputus. Peta yang belum dilihat mungkin kosong tanpa internet.';
   showPrep(true);
-  var voiceP;
-  if(TTS&&TTS.isLanguageSupported){
-    voiceP=TTS.isLanguageSupported({lang:tx().tts}).then(function(r){return !(r&&r.supported===false)}).catch(function(){return true});
-  }else voiceP=Promise.resolve(true);
-  voiceP.then(function(ok){$('#p3').textContent=ok?'✅':'⚠️';if(!ok)$('#pNote').textContent='Suara belum dipasang. Buka Tetapan, tekan "Pasang suara".'});
+  $('#p3').textContent='✅';
+  try{
+    var _w=[tx().start];if(route&&route.steps)route.steps.slice(0,4).forEach(function(st){_w.push(stepText(st))});
+    _w.forEach(prefetchSay);
+  }catch(e){}
   var timeout=new Promise(function(res){setTimeout(function(){res({ok:false,timeout:true})},40000)});
   Promise.race([prepareTrip(route),timeout]).then(function(r){
     $('#p2').textContent=r.ok?'✅':(r.partial?'⚠️':'❌');
@@ -2093,12 +2103,13 @@ function shutdownApp(){
     if(navActive){navActive=false;saveTrip()}
     clearTrip();
     stopWatch();keepScreenOn(false);stopSpeak();
+    toast('Menutup JOMAPZ...',1500);
     setTimeout(function(){
       try{if(window.JomapzNative&&window.JomapzNative.quit){window.JomapzNative.quit();return}}catch(e){}
       try{if(APP&&APP.exitApp){APP.exitApp();return}}catch(e){}
       try{if(APP&&APP.minimizeApp){APP.minimizeApp();toast('Tidak dapat tutup sepenuhnya. App dikecilkan.',3000);return}}catch(e){}
       toast('Tutup app secara manual',3000);
-    },200);
+    },150);
   });
 }
 var splashT0=Date.now();
@@ -2468,11 +2479,6 @@ function testVoice(){
   VENG=$('#selVeng').value;LS.set('veng2',VENG);
   LANG=$('#selLang').value;
   var wasVoice=VOICE;VOICE=true;
-  if(TTS&&TTS.isLanguageSupported){
-    TTS.isLanguageSupported({lang:tx().tts}).then(function(r){
-      if(r&&r.supported===false)toast(L('Suara '+(LANG==='ms'?'Melayu':'English')+' belum dipasang. Tekan "Pasang suara"','Voice not installed. Tap "Install voice"'),5000);
-    }).catch(function(){});
-  }
   speak(tx().test);
   VOICE=wasVoice;
   if(VENG==='app')espLoad().then(function(ok){if(!ok)toast('Suara dalam app gagal dimuat: '+ESP.fail,6000)});
@@ -2610,9 +2616,9 @@ window.__sharePing=function(){try{if(window.JomapzNative){var s=JomapzNative.tak
 function runDiag(){
   var out=$('#diag');out.textContent='Menguji...';
   var tests=[
-    ['Overpass 1',function(){return diagFetch(OV_MIRRORS[0],{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:'data='+encodeURIComponent('[out:json][timeout:8];node(1);out;')})}],
-    ['Overpass 2',function(){return diagFetch(OV_MIRRORS[1],{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:'data='+encodeURIComponent('[out:json][timeout:8];node(1);out;')})}],
-    ['Overpass 3',function(){return diagFetch(OV_MIRRORS[2],{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:'data='+encodeURIComponent('[out:json][timeout:8];node(1);out;')})}],
+    ['Overpass 1 (cadangan)',function(){return diagFetch(OV_MIRRORS[0],{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:'data='+encodeURIComponent('[out:json][timeout:8];node(1);out;')})}],
+    ['Overpass 2 (cadangan)',function(){return diagFetch(OV_MIRRORS[1],{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:'data='+encodeURIComponent('[out:json][timeout:8];node(1);out;')})}],
+    ['Overpass 3 (cadangan)',function(){return diagFetch(OV_MIRRORS[2],{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:'data='+encodeURIComponent('[out:json][timeout:8];node(1);out;')})}],
     ['Carian Photon',function(){return diagFetch('https://photon.komoot.io/api/?q=puchong&limit=1')}],
     ['Nama jalan Photon',function(){return diagFetch('https://photon.komoot.io/reverse?lat=2.9667&lon=101.5797')}],
     ['Laluan Valhalla',function(){return diagFetch('https://valhalla1.openstreetmap.de/status')}],

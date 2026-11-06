@@ -203,11 +203,42 @@ public class MainActivity extends BridgeActivity {
         }
 
         @JavascriptInterface
+        public void save(String k, String v) {
+            try {
+                getSharedPreferences("jz_store", 0).edit().putString(k, v).commit();
+            } catch (Exception e) {
+            }
+        }
+
+        @JavascriptInterface
+        public String load(String k) {
+            try {
+                return getSharedPreferences("jz_store", 0).getString(k, "");
+            } catch (Exception e) {
+                return "";
+            }
+        }
+
+        @JavascriptInterface
         public void quit() {
             runOnUiThread(new Runnable() {
                 @Override
                 public void run() {
                     try {
+                        stopMp();
+                    } catch (Exception e) {
+                    }
+                    try {
+                        android.app.NotificationManager nm = (android.app.NotificationManager) getSystemService(android.content.Context.NOTIFICATION_SERVICE);
+                        if (nm != null) nm.cancelAll();
+                    } catch (Exception e) {
+                    }
+                    try {
+                        stopService(new Intent().setClassName(getPackageName(), "com.equimaps.capacitor_background_geolocation.BackgroundGeolocationService"));
+                    } catch (Exception e) {
+                    }
+                    try {
+                        finishAffinity();
                         finishAndRemoveTask();
                     } catch (Exception e) {
                         finish();
@@ -216,8 +247,9 @@ public class MainActivity extends BridgeActivity {
                         @Override
                         public void run() {
                             android.os.Process.killProcess(android.os.Process.myPid());
+                            System.exit(0);
                         }
-                    }, 500);
+                    }, 400);
                 }
             });
         }
