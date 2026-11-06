@@ -100,6 +100,7 @@ body.night .cc.aes{background:#4a1f1c;color:#ffd4d0;border-color:#7a2b26}
 @keyframes spRot{to{transform:translate(-50%,-50%) rotate(360deg)}}
 @keyframes spBreath{from{transform:translate(-50%,-50%) scale(1)}to{transform:translate(-50%,-50%) scale(1.025)}}
 #splash.out{opacity:0;pointer-events:none}
+#spVer{position:absolute;left:0;right:0;top:87.2%;text-align:center;color:#9aa89a;font-size:max(12px,3.4vw);letter-spacing:.5px;font-weight:600}
 #lanes{position:absolute;left:50%;transform:translateX(-50%);top:calc(var(--top) + 98px);z-index:6;display:flex;gap:4px;background:rgba(14,90,42,.96);padding:6px 8px;border-radius:12px;box-shadow:0 2px 10px rgba(0,0,0,.4)}
 #lanes svg{width:34px;height:46px;display:block}
 #lanes .ln{border-radius:6px;background:rgba(255,255,255,.14)}
@@ -113,7 +114,7 @@ body.night .cc.inc{background:#4a1f1c;color:#ffd4d0;border-color:#7a2b26}
 .maplibregl-popup-content button{margin-top:8px;width:100%;background:var(--pri);color:#fff;border-radius:8px;padding:9px;font-weight:600}
 
 /* ===== kemasan UI v2 ===== */
-#upd{z-index:80}#ask{z-index:70}#placeDlg{z-index:60}#mapType{z-index:60}
+#rtDlg{z-index:65}#upd{z-index:80}#ask{z-index:70}#placeDlg{z-index:60}#mapType{z-index:60}
 :root{--r:16px;--sh:0 4px 16px rgba(0,0,0,.22)}
 body{font-family:Roboto,system-ui,-apple-system,"Segoe UI",sans-serif;-webkit-font-smoothing:antialiased}
 #searchRow{border-radius:var(--r);box-shadow:var(--sh);align-items:center}
@@ -190,7 +191,7 @@ body.sat #map .maplibregl-canvas{filter:brightness(var(--dim))!important}
 </style>
 </head>
 <body>
-<div id="splash" aria-hidden="true"><div class="in"><div class="patch"></div><div class="spin"></div></div></div>
+<div id="splash" aria-hidden="true"><div class="in"><div class="patch"></div><div class="spin"></div><div id="spVer"></div></div></div>
 <div id="map"></div>
 
 <div id="top">
@@ -275,11 +276,20 @@ body.sat #map .maplibregl-canvas{filter:brightness(var(--dim))!important}
 
 <div id="navbar" hidden>
   <div class="eta" id="eta"></div>
+  <button class="btn s" id="btnRoutes">Laluan</button>
   <button class="btn s" id="btnShareEta">Kongsi</button>
   <button class="btn d" id="btnEnd">Tamat</button>
 </div>
 
 <div id="toast" hidden></div>
+
+<div id="rtDlg" class="ov" hidden>
+  <div class="box">
+    <h3>Tukar laluan</h3>
+    <div id="rtList"><p class="note">Mengira laluan dari lokasi semasa...</p></div>
+    <div class="row"><button class="btn s" id="rtClose">Tutup</button></div>
+  </div>
+</div>
 
 <div id="prep" class="ov" hidden>
   <div class="box">
@@ -729,7 +739,7 @@ function mapMenu(ll){
 function markCamera(lat,lng){
   MYCAMS.push({lat:lat,lng:lng,t:Date.now()});
   LS.set('myCams',MYCAMS);
-  toast('Kamera laju ditandakan. Akan muncul sebagai amaran di laluan.',3000);
+  toast(L('Kamera laju ditandakan di lokasi ini. Kau akan diberi amaran bila lalu sini lagi.','Speed camera marked here. You will be warned when you pass here again.'),4000);
   if(map&&ACTIVE.indexOf('cam')>=0)schedulePOI();
 }
 function setFollow(v){
@@ -919,6 +929,27 @@ function lookupRoad(lat,lng){
     var lr=localRoad(lat,lng);
     if(lr){setRoadInfo(lr.w[0],lr.w[1],lr.w[2],lr.w[3]);return}
   }
+  if(TTKEY&&(!lastTT.t||Date.now()-lastTT.t>12000||haversine(lastTT.lat,lastTT.lng,lat,lng)>50)){
+    roadBusy=true;lastTT={lat:lat,lng:lng,t:Date.now()};
+    fetch('https://api.tomtom.com/search/2/reverseGeocode/'+lat.toFixed(5)+','+lng.toFixed(5)+'.json?key='+encodeURIComponent(TTKEY)+'&radius=60&returnSpeedLimit=true&language=en-GB')
+    .then(function(r){if(!r.ok)throw new Error('tt');return r.json()})
+    .then(function(j){
+      var a=((j.addresses||[])[0]||{}).address||{};
+      var nm=a.streetName||a.street||'';
+      if(!nm)throw new Error('none');
+      var spd=null,m=/([\d.]+)\s*(KPH|MPH)/i.exec(a.speedLimit||'');
+      if(m){spd=Math.round(parseFloat(m[1])*(/MPH/i.test(m[2])?1.609:1))}
+      setRoadInfo(nm,a.routeNumbers&&a.routeNumbers[0]||'',spd||0,0);
+      if(!spd){limit={val:null,known:false};$('#lim').hidden=true}
+      roadBusy=false;
+    }).catch(function(){roadBusy=false;lookupRoadOv(lat,lng)});
+    return;
+  }
+  if(TTKEY&&lastTT.t&&roadText){return}
+  lookupRoadOv(lat,lng);
+}
+var lastTT={lat:0,lng:0,t:0};
+function lookupRoadOv(lat,lng){
   roadBusy=true;
   var ctl=('AbortController' in window)?new AbortController():null;
   var to=setTimeout(function(){if(ctl)ctl.abort()},10000);
@@ -2118,7 +2149,7 @@ function resumeTrip(){
   })();
 }
 var hpush=false,ignorePop=false;
-var BACKIDS=['#upd','#ask','#placeDlg','#mapType','#settings','#trips','#resume'];
+var BACKIDS=['#upd','#ask','#rtDlg','#placeDlg','#mapType','#settings','#trips','#resume'];
 function backClose(){
   if(!$('#prep').hidden)return true;
   var i;
@@ -2227,6 +2258,28 @@ function updateNav(){
   if(!nxt)hideLanes();
   updateChips(pr.prog);
   warmAhead();
+}
+function openRoutes(){
+  if(!navActive||!me||!destInfo)return;
+  $('#rtDlg').hidden=false;
+  var box=$('#rtList');box.innerHTML='<p class="note">'+L('Mengira laluan dari lokasi semasa...','Calculating routes from your location...')+'</p>';
+  getRoutes(me,destInfo).then(function(list){
+    box.innerHTML='';
+    var cur=route&&route.labels&&route.labels[0];
+    list.forEach(function(r){
+      var b=document.createElement('button');b.className='opt'+(r.labels.indexOf(cur)>=0?' on':'');
+      var toll=VEH==='moto'?L('Bebas tol','No toll'):(r.hasToll?L('Ada tol','Toll'):L('Tiada tol','No toll'));
+      b.innerHTML='<div><b>'+escapeHtml(optLabel(r))+(r.live?' 🚦':'')+'</b><small>'+fmtDist(r.dist)+' · '+toll+(r.live&&r.delay>=120?' · +'+Math.round(r.delay/60)+L(' min sesak',' min traffic'):'')+'</small></div><span class="tm">'+fmtTime(r.dur)+'</span>';
+      b.onclick=function(){
+        $('#rtDlg').hidden=true;
+        route=r;spoken={};navNext=null;lastPre=-1;drawRoute(r);clearChips();
+        speak(tx().reroute);
+        prepareTrip(r).catch(function(){}).then(persistTrip);
+        toast(L('Laluan ditukar: ','Route changed: ')+optLabel(r),3000);
+      };
+      box.appendChild(b);
+    });
+  }).catch(function(e){box.innerHTML='<p class="note">'+escapeHtml(e.message||'Gagal')+'</p>'});
 }
 function doReroute(){
   lastReroute=Date.now();offCount=0;
@@ -2569,7 +2622,7 @@ var EN_FULL={
 
 Object.assign(EN_FULL,{
 'Alternatif':'Alternative',
-'Tempat di peta':'Places on map','Trafik langsung di peta (merah = sesak)':'Live traffic on map (red = congested)','Enjin suara':'Voice engine','Auto: suara Google (natural) + cadangan offline':'Auto: Google voice (natural) + offline fallback','Offline sahaja (suara robot dalam app)':'Offline only (robotic in-app voice)','Auto: guna suara Google yang natural (perlu internet). Ayat arahan disimpan dalam phone selepas kali pertama dan dimuat awal semasa perjalanan, jadi masih jalan bila internet lemah. Kalau tiada internet, app guna suara robot yang terbina dalam app.':'Auto: uses the natural Google voice (needs internet). Phrases are saved on the phone after first use and pre-loaded during the trip, so it keeps working on weak signal. With no internet the app uses the built-in robotic voice.','Suara sistem phone':'Phone system voice','Pilih tempat yang mahu dipaparkan pada peta. Lalai: semua dimatikan supaya skrin kemas.':'Choose which places to show on the map. Default: all off to keep the screen clean.',
+'Tempat di peta':'Places on map','Laluan':'Routes','Tukar laluan':'Change route','Mengira laluan dari lokasi semasa...':'Calculating routes from your location...','Trafik langsung di peta (merah = sesak)':'Live traffic on map (red = congested)','Enjin suara':'Voice engine','Auto: suara Google (natural) + cadangan offline':'Auto: Google voice (natural) + offline fallback','Offline sahaja (suara robot dalam app)':'Offline only (robotic in-app voice)','Auto: guna suara Google yang natural (perlu internet). Ayat arahan disimpan dalam phone selepas kali pertama dan dimuat awal semasa perjalanan, jadi masih jalan bila internet lemah. Kalau tiada internet, app guna suara robot yang terbina dalam app.':'Auto: uses the natural Google voice (needs internet). Phrases are saved on the phone after first use and pre-loaded during the trip, so it keeps working on weak signal. With no internet the app uses the built-in robotic voice.','Suara sistem phone':'Phone system voice','Pilih tempat yang mahu dipaparkan pada peta. Lalai: semua dimatikan supaya skrin kemas.':'Choose which places to show on the map. Default: all off to keep the screen clean.',
 'Matikan JOMAPZ sepenuhnya? Navigasi, GPS dan suara akan berhenti.':'Shut down JOMAPZ completely? Navigation, GPS and voice will stop.','OK':'OK',
 'Tambah':'Add','Simpan tempat':'Save place','Ubah tempat':'Edit place','Nama':'Name','Ikon':'Icon','Lokasi':'Location','Contoh: Rumah mak':'Example: Mum\'s house',
 '📍 Guna lokasi saya sekarang':'📍 Use my current location','Padam':'Delete','Simpan':'Save','Jenis peta':'Map type','Lalai':'Default','Standard OSM':'Standard OSM',
@@ -2722,7 +2775,7 @@ document.addEventListener('DOMContentLoaded',function(){
   startI18n();
   DATAP=loadOsmData();
   setTimeout(window.__sharePing,1200);
-  fetch('version.json').then(function(r){return r.ok?r.json():null}).then(function(j){if(j&&j.build){BUILD=j.build;$('#verNote').textContent='JOMAPZ build '+j.build+' · dibina oleh Pratama Yudha'}else{$('#verNote').textContent='JOMAPZ · dibina oleh Pratama Yudha'}}).catch(function(){});
+  fetch('version.json').then(function(r){return r.ok?r.json():null}).then(function(j){if(j&&j.build){BUILD=j.build;try{$('#spVer').textContent='Version 1.3.'+j.build+' · build '+j.build}catch(e){}$('#verNote').textContent='JOMAPZ build '+j.build+' · dibina oleh Pratama Yudha'}else{$('#verNote').textContent='JOMAPZ · dibina oleh Pratama Yudha'}}).catch(function(){});
   setTimeout(function(){checkUpdate(false)},7000);
   $('#btnCheckUpd').onclick=function(){checkUpdate(true)};
   $('#btnDiag').onclick=runDiag;
@@ -2769,6 +2822,8 @@ document.addEventListener('DOMContentLoaded',function(){
   $('#btnStart').onclick=beginTrip;
   $('#btnCancel').onclick=function(){$('#sheet').hidden=true;$('#top').hidden=false;setMode(false,false);clearRoute();setFollow(true)};
   $('#btnEnd').onclick=endNav;
+  $('#btnRoutes').onclick=openRoutes;
+  $('#rtClose').onclick=function(){$('#rtDlg').hidden=true};
   $('#btnShareEta').onclick=shareEta;
   $('#btnSavePlace').onclick=function(){if(destInfo)openPlaceDlg({n:destInfo.name,lat:destInfo.lat,lng:destInfo.lng,i:'⭐'})};
   $('#askNo').onclick=function(){$('#ask').hidden=true;askCb=null};
