@@ -113,7 +113,7 @@ body.night .cc.inc{background:#4a1f1c;color:#ffd4d0;border-color:#7a2b26}
 .maplibregl-popup-content button{margin-top:8px;width:100%;background:var(--pri);color:#fff;border-radius:8px;padding:9px;font-weight:600}
 
 /* ===== kemasan UI v2 ===== */
-#ask{z-index:70}#placeDlg{z-index:60}#mapType{z-index:60}
+#upd{z-index:80}#ask{z-index:70}#placeDlg{z-index:60}#mapType{z-index:60}
 :root{--r:16px;--sh:0 4px 16px rgba(0,0,0,.22)}
 body{font-family:Roboto,system-ui,-apple-system,"Segoe UI",sans-serif;-webkit-font-smoothing:antialiased}
 #searchRow{border-radius:var(--r);box-shadow:var(--sh);align-items:center}
@@ -2080,7 +2080,7 @@ function resumeTrip(){
   })();
 }
 var hpush=false,ignorePop=false;
-var BACKIDS=['#ask','#placeDlg','#mapType','#settings','#trips','#resume'];
+var BACKIDS=['#upd','#ask','#placeDlg','#mapType','#settings','#trips','#resume'];
 function backClose(){
   if(!$('#prep').hidden)return true;
   var i;
@@ -2647,6 +2647,16 @@ function diagFetch(u,opt){
 
 /* ---------- kemas kini app ---------- */
 function openUrl(u){try{if(BR){BR.open({url:u});return}}catch(e){}window.open(u,'_blank')}
+function updDone(st,pct,msg){
+  var t=$('#updTxt'),y=$('#btnUpdYes'),n=$('#btnUpdNo');
+  if(st==='prog'){t.textContent=L('Memuat turun... ','Downloading... ')+pct+'%';return}
+  y.disabled=false;n.disabled=false;
+  if(st==='perm'){t.textContent=L('Android perlu kebenaran sekali sahaja. Hidupkan "Benarkan dari sumber ini" untuk JOMAPZ, tekan butang kembali, kemudian tekan Kemas kini semula.','Android needs a one-time permission. Turn on "Allow from this source" for JOMAPZ, press back, then tap Update again.');return}
+  if(st==='done'){$('#upd').hidden=true;toast(L('Tekan Kemas kini pada skrin Android untuk siap pasang','Tap Update on the Android screen to finish installing'),5000);return}
+  t.textContent=L('Muat turun dalam app gagal ('+(msg||'')+'). Cuba muat turun melalui pelayar.','In-app download failed ('+(msg||'')+'). Try the browser download.');
+  y.onclick=function(){$('#upd').hidden=true;openUrl(updInfo.url)};
+}
+window.__upd=updDone;
 function checkUpdate(manual){
   if(!manual){
     var last=LS.get('updLast',0);
@@ -2664,7 +2674,7 @@ function checkUpdate(manual){
       updInfo={n:n,url:a.browser_download_url};
       var skip=LS.get('updSkip',{});
       if(!manual&&((skip.n===n&&Date.now()-skip.t<24*3600*1000)||navActive))return;
-      $('#updTxt').textContent='Versi baru (build '+n+') sudah sedia. Kau guna build '+BUILD+'. Tekan Kemas kini, muat turun APK, kemudian ketuk fail itu untuk install. Data tersimpan kekal.';
+      $('#updTxt').textContent='Versi baru (build '+n+') sudah sedia. Kau guna build '+BUILD+'. Tekan Kemas kini. App akan muat turun dan pasang sendiri. Data tersimpan kekal.';
       $('#upd').hidden=false;
     }else if(manual)toast('Sudah versi terkini (build '+BUILD+')');
   }).catch(function(){if(manual)toast('Tidak dapat semak kemas kini sekarang',3500)});
@@ -2679,7 +2689,14 @@ document.addEventListener('DOMContentLoaded',function(){
   $('#btnCheckUpd').onclick=function(){checkUpdate(true)};
   $('#btnDiag').onclick=runDiag;
   $('#btnUpdNo').onclick=function(){$('#upd').hidden=true;if(updInfo)LS.set('updSkip',{n:updInfo.n,t:Date.now()})};
-  $('#btnUpdYes').onclick=function(){$('#upd').hidden=true;if(updInfo)openUrl(updInfo.url)};
+  $('#btnUpdYes').onclick=function(){
+    if(!updInfo)return;
+    var N=window.JomapzNative;
+    if(!(N&&N.installApk)){$('#upd').hidden=true;openUrl(updInfo.url);return}
+    $('#btnUpdYes').disabled=true;$('#btnUpdNo').disabled=true;
+    $('#updTxt').textContent=L('Memuat turun... 0%','Downloading... 0%');
+    try{N.installApk(updInfo.url)}catch(e){updDone('err',0,String(e))}
+  };
   fetch('config.json').then(function(r){return r.ok?r.json():null}).then(function(j){if(j&&j.tt&&!TTKEY){TTKEY=j.tt;TTBUILT=true}}).catch(function(){});
   fetch('tol.json').then(function(r){return r.ok?r.json():null}).then(function(j){if(j&&j.plazas)TOL=j}).catch(function(){});
   applyTheme();

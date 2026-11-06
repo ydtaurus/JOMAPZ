@@ -65,6 +65,93 @@ public class MainActivity extends BridgeActivity {
         }
     }
 
+    private void updJs(final String st, final int pct, final String msg) {
+        runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                try {
+                    getBridge().getWebView().evaluateJavascript("window.__upd&&window.__upd(" + JSONObject.quote(st) + "," + pct + "," + JSONObject.quote(msg == null ? "" : msg) + ")", null);
+                } catch (Exception e) {
+                }
+            }
+        });
+    }
+
+    private void doInstall(String url) {
+        try {
+            if (android.os.Build.VERSION.SDK_INT >= 26 && !getPackageManager().canRequestPackageInstalls()) {
+                updJs("perm", 0, "");
+                runOnUiThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        try {
+                            Intent i = new Intent(android.provider.Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES, android.net.Uri.parse("package:" + getPackageName()));
+                            startActivity(i);
+                        } catch (Exception e) {
+                        }
+                    }
+                });
+                return;
+            }
+            File dir = new File(getCacheDir(), "upd");
+            dir.mkdirs();
+            File[] old = dir.listFiles();
+            if (old != null) for (File o : old) o.delete();
+            File f = new File(dir, "JOMAPZ.apk");
+            HttpURLConnection c = (HttpURLConnection) new URL(url).openConnection();
+            c.setInstanceFollowRedirects(true);
+            c.setConnectTimeout(15000);
+            c.setReadTimeout(20000);
+            int code = c.getResponseCode();
+            if (code != 200) {
+                updJs("err", 0, "HTTP " + code);
+                return;
+            }
+            long total = c.getContentLengthLong();
+            InputStream is = c.getInputStream();
+            FileOutputStream os = new FileOutputStream(f);
+            byte[] buf = new byte[32768];
+            int n;
+            long got = 0;
+            int last = -1;
+            while ((n = is.read(buf)) > 0) {
+                os.write(buf, 0, n);
+                got += n;
+                if (total > 0) {
+                    int p = (int) (got * 100 / total);
+                    if (p != last) {
+                        last = p;
+                        updJs("prog", p, "");
+                    }
+                }
+            }
+            os.close();
+            is.close();
+            c.disconnect();
+            if (f.length() < 1000000) {
+                updJs("err", 0, "fail tidak lengkap");
+                return;
+            }
+            final android.net.Uri uri = androidx.core.content.FileProvider.getUriForFile(MainActivity.this, getPackageName() + ".fileprovider", f);
+            runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+                    try {
+                        Intent i = new Intent(Intent.ACTION_VIEW);
+                        i.setDataAndType(uri, "application/vnd.android.package-archive");
+                        i.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION | Intent.FLAG_ACTIVITY_NEW_TASK);
+                        startActivity(i);
+                        updJs("done", 100, "");
+                    } catch (Exception e) {
+                        updJs("err", 0, e.getClass().getSimpleName());
+                    }
+                }
+            });
+        } catch (Exception e) {
+            updJs("err", 0, e.getClass().getSimpleName() + " " + String.valueOf(e.getMessage()));
+        }
+    }
+
     private void notifySay(final int id, final boolean ok) {
         runOnUiThread(new Runnable() {
             @Override
@@ -198,6 +285,16 @@ public class MainActivity extends BridgeActivity {
                 @Override
                 public void run() {
                     stopMp();
+                }
+            });
+        }
+
+        @JavascriptInterface
+        public void installApk(final String url) {
+            pool.execute(new Runnable() {
+                @Override
+                public void run() {
+                    doInstall(url);
                 }
             });
         }
