@@ -2772,7 +2772,7 @@ function resolveLink(text){
     if(!(window.JomapzNative&&JomapzNative.resolve)){ok(null);return}
     var id='r'+Date.now();
     resolvers[id]=ok;
-    setTimeout(function(){if(resolvers[id]){delete resolvers[id];ok(null)}},20000);
+    setTimeout(function(){if(resolvers[id]){delete resolvers[id];ok(null)}},34000);
     try{JomapzNative.resolve(text,id)}catch(e){delete resolvers[id];ok(null)}
   });
 }

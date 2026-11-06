@@ -2,6 +2,15 @@ package my.jomapz.app;
 
 import android.content.Intent;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
+import android.webkit.CookieManager;
+import android.webkit.WebSettings;
+import android.webkit.WebView;
+import android.webkit.WebViewClient;
+import android.webkit.ValueCallback;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 import android.webkit.JavascriptInterface;
 import com.getcapacitor.BridgeActivity;
 import java.io.File;
@@ -487,7 +496,74 @@ public class MainActivity extends BridgeActivity {
         return r;
     }
 
-    static String resolveText(final String text) {
+    String webResolve(final String url) {
+        final String[] out = new String[] {""};
+        final CountDownLatch done = new CountDownLatch(1);
+        final Handler hd = new Handler(Looper.getMainLooper());
+        final WebView[] holder = new WebView[1];
+        runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                try {
+                    final WebView wv = new WebView(MainActivity.this);
+                    holder[0] = wv;
+                    WebSettings ws = wv.getSettings();
+                    ws.setJavaScriptEnabled(true);
+                    ws.setDomStorageEnabled(true);
+                    ws.setUserAgentString("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0 Safari/537.36");
+                    CookieManager.getInstance().setCookie("https://www.google.com", "CONSENT=YES+cb; SOCS=CAI");
+                    wv.setWebViewClient(new WebViewClient());
+                    wv.loadUrl(url);
+                    final int[] tick = new int[] {0};
+                    final Runnable poll = new Runnable() {
+                        @Override
+                        public void run() {
+                            tick[0]++;
+                            String cur = wv.getUrl();
+                            if (cur != null && cur.contains("!3d") && cur.contains("!4d")) {
+                                out[0] = cur;
+                                done.countDown();
+                                return;
+                            }
+                            if (cur != null && tick[0] > 16 && cur.contains("@")) {
+                                out[0] = cur;
+                                done.countDown();
+                                return;
+                            }
+                            if (tick[0] >= 28) {
+                                if (cur != null) out[0] = cur;
+                                done.countDown();
+                                return;
+                            }
+                            hd.postDelayed(this, 500);
+                        }
+                    };
+                    hd.postDelayed(poll, 800);
+                } catch (Exception e) {
+                    done.countDown();
+                }
+            }
+        });
+        try {
+            done.await(16, TimeUnit.SECONDS);
+        } catch (Exception e) {
+        }
+        runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                try {
+                    if (holder[0] != null) {
+                        holder[0].stopLoading();
+                        holder[0].destroy();
+                    }
+                } catch (Exception e) {
+                }
+            }
+        });
+        return out[0];
+    }
+
+    String resolveText(final String text) {
         String url = "";
                 String dbg = "";
                 String lat = "";
@@ -538,6 +614,21 @@ public class MainActivity extends BridgeActivity {
                         }
                         if (b3 != null) {
                             cands = "body3d=" + b3[0] + "," + b3[1];
+                        }
+                        if (lat.length() == 0) {
+                            String w = webResolve(url);
+                            dbg = dbg + " web=" + (w.length() > 0 ? "ok" : "none");
+                            String[] w3 = lastPair(w, "!3d(-?\\d{1,2}\\.\\d+)!4d(-?\\d{2,3}\\.\\d+)");
+                            String[] wa = firstPair(w, "@(-?\\d{1,2}\\.\\d+),(-?\\d{2,3}\\.\\d+)");
+                            if (w3 != null) {
+                                lat = w3[0];
+                                lng = w3[1];
+                                src = "web3d";
+                            } else if (wa != null) {
+                                lat = wa[0];
+                                lng = wa[1];
+                                src = "webat";
+                            }
                         }
                         dbg = dbg + " src=" + src;
                         dbg = dbg + " len" + body.length();
