@@ -103,6 +103,19 @@ class H(osmium.SimpleHandler):
         if not w.tags:
             return
         t = {tg.k: tg.v for tg in w.tags}
+        if PROBE:
+            try:
+                pp = [(nd.location.lat, nd.location.lon) for nd in w.nodes if nd.location.valid()]
+            except Exception:
+                pp = []
+            if pp:
+                nm = (t.get('name') or '').lower()
+                if 'highway' in t:
+                    dd = min(_dm(a, b) for a, b in pp)
+                    if dd <= 400:
+                        print('PROBE-ROAD', int(dd), t.get('name'), t.get('ref'), t.get('highway'), t.get('maxspeed'), pp[0])
+                if ('meng kah' in nm or 'mka' in nm or 'jalan tpp 5' in nm) and _dm(pp[0][0], pp[0][1]) < 4000:
+                    print('PROBE-WAY', pp[0], t.get('name'), t.get('highway'), t.get('building'), t.get('shop'), t.get('office'), int(_dm(pp[0][0], pp[0][1])))
         hit = [c for c, fn in INFRA.items() if c not in ("sig",) and fn(t)]
         has_lanes = "highway" in t and any(k.startswith("turn:lanes") for k in t)
         hw = HW_CODE.get(t.get("highway", ""), 0)
@@ -119,12 +132,6 @@ class H(osmium.SimpleHandler):
             return
         if not pts:
             return
-        if PROBE and 'highway' in t:
-            dd = min(_dm(a, b) for a, b in pts)
-            if dd <= 150:
-                print('PROBE-ROAD', int(dd), t.get('name'), t.get('ref'), t.get('highway'), t.get('maxspeed'), 'baked' if want_road else 'NOT-baked')
-        if PROBE and ('meng kah' in (t.get('name') or '').lower() or 'mka' in (t.get('name') or '').lower()) and _dm(pts[0][0], pts[0][1]) < 3000:
-            print('PROBE-POIWAY', pts[0], t.get('name'), t.get('building'), t.get('shop'), t.get('office'), int(_dm(pts[0][0], pts[0][1])))
         if hit:
             lat = sum(p[0] for p in pts) / len(pts)
             lng = sum(p[1] for p in pts) / len(pts)
