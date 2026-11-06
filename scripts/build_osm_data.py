@@ -1,7 +1,14 @@
 """Bina data OSM Malaysia (POI, lampu isyarat, kamera, data lorong) ke www/data/osm.json.
 Guna: python scripts/build_osm_data.py malaysia.osm.pbf www/data/osm.json"""
-import json, sys, datetime
+import json, sys, datetime, os, math
 import osmium
+
+PROBE = os.environ.get('PROBE')
+PLAT, PLNG = 2.96685, 101.57969
+
+
+def _dm(a, b):
+    return math.hypot((a - PLAT) * 110540, (b - PLNG) * 111320 * math.cos(PLAT * math.pi / 180))
 
 INFRA = {
     "fuel": lambda t: t.get("amenity") == "fuel",
@@ -82,6 +89,10 @@ class H(osmium.SimpleHandler):
         if not n.tags or not n.location.valid():
             return
         t = {tg.k: tg.v for tg in n.tags}
+        if PROBE:
+            nm = (t.get('name') or '').lower()
+            if ('meng kah' in nm or 'mka' in nm) and _dm(n.location.lat, n.location.lon) < 3000:
+                print('PROBE-POI', n.location.lat, n.location.lon, t.get('name'), t.get('shop'), t.get('office'), int(_dm(n.location.lat, n.location.lon)))
         for cat, fn in INFRA.items():
             if cat == "lorong":
                 continue
@@ -108,6 +119,12 @@ class H(osmium.SimpleHandler):
             return
         if not pts:
             return
+        if PROBE and 'highway' in t:
+            dd = min(_dm(a, b) for a, b in pts)
+            if dd <= 150:
+                print('PROBE-ROAD', int(dd), t.get('name'), t.get('ref'), t.get('highway'), t.get('maxspeed'), 'baked' if want_road else 'NOT-baked')
+        if PROBE and ('meng kah' in (t.get('name') or '').lower() or 'mka' in (t.get('name') or '').lower()) and _dm(pts[0][0], pts[0][1]) < 3000:
+            print('PROBE-POIWAY', pts[0], t.get('name'), t.get('building'), t.get('shop'), t.get('office'), int(_dm(pts[0][0], pts[0][1])))
         if hit:
             lat = sum(p[0] for p in pts) / len(pts)
             lng = sum(p[1] for p in pts) / len(pts)

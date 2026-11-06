@@ -114,7 +114,8 @@ body.night .cc.inc{background:#4a1f1c;color:#ffd4d0;border-color:#7a2b26}
 .maplibregl-popup-content button{margin-top:8px;width:100%;background:var(--pri);color:#fff;border-radius:8px;padding:9px;font-weight:600}
 
 /* ===== kemasan UI v2 ===== */
-#rtDlg{z-index:65}#upd{z-index:80}#ask{z-index:70}#placeDlg{z-index:60}#mapType{z-index:60}
+#rtDlg{z-index:65}body:not(.nav) #lim{display:none!important}
+#upd{z-index:80}#ask{z-index:70}#placeDlg{z-index:60}#mapType{z-index:60}
 :root{--r:16px;--sh:0 4px 16px rgba(0,0,0,.22)}
 body{font-family:Roboto,system-ui,-apple-system,"Segoe UI",sans-serif;-webkit-font-smoothing:antialiased}
 #searchRow{border-radius:var(--r);box-shadow:var(--sh);align-items:center}
@@ -334,6 +335,9 @@ body.sat #map .maplibregl-canvas{filter:brightness(var(--dim))!important}
     <h4>Tempat di peta</h4>
     <div id="layerList"></div>
     <p class="note">Pilih tempat yang mahu dipaparkan pada peta. Lalai: semua dimatikan supaya skrin kemas.</p>
+
+    <h4>Kamera laju yang kau tanda</h4>
+    <div id="camList"></div>
 
     <h4>Di skrin</h4>
     <div class="sw"><span>Amaran kamera laju</span><input type="checkbox" id="swAes"></div>
@@ -737,6 +741,20 @@ function mapMenu(ll){
   el.querySelector('[data-cam]').onclick=function(){clearPin();markCamera(lat,lng)};
 }
 function markCamera(lat,lng){
+  askYes(L('Tandakan kamera laju di lokasi ini?','Mark a speed camera at this location?'),function(){doMarkCamera(lat,lng)});
+}
+function renderCams(){
+  var box=$('#camList');if(!box)return;box.innerHTML='';
+  if(!MYCAMS.length){box.innerHTML='<p class="note">'+L('Tiada kamera ditanda.','No cameras marked.')+'</p>';return}
+  MYCAMS.forEach(function(c,i){
+    var r=document.createElement('div');r.className='sw';
+    var d=new Date(c.t||0);
+    r.innerHTML='<span>📷 '+c.lat.toFixed(5)+', '+c.lng.toFixed(5)+'<br><small>'+d.toLocaleDateString()+'</small></span><button class="btn s">'+L('Padam','Delete')+'</button>';
+    r.querySelector('button').onclick=function(){MYCAMS.splice(i,1);LS.set('myCams',MYCAMS);renderCams();if(map&&ACTIVE.indexOf('cam')>=0)schedulePOI()};
+    box.appendChild(r);
+  });
+}
+function doMarkCamera(lat,lng){
   MYCAMS.push({lat:lat,lng:lng,t:Date.now()});
   LS.set('myCams',MYCAMS);
   toast(L('Kamera laju ditandakan di lokasi ini. Kau akan diberi amaran bila lalu sini lagi.','Speed camera marked here. You will be warned when you pass here again.'),4000);
@@ -918,7 +936,7 @@ function tick(kmh){
       lookupRoad(me.lat,me.lng);
     }
   }
-  var over=limit.known&&limit.val&&kmh>limit.val+3;
+  var over=navActive&&limit.known&&limit.val&&kmh>limit.val+3;
   document.documentElement.style.setProperty('--dim',(DIM&&over)?'0.4':'1');
   $('#spdCard').classList.toggle('over',!!over);
   $('#lim').classList.toggle('blink',!!over);
@@ -955,12 +973,41 @@ function setRoadInfo(name,ref,spd,hw){
   if(val){L.hidden=false;L.textContent=known?val:'~'+val;L.classList.toggle('est',!known)}else L.hidden=true;
   $('#roadName').textContent=roadText;
 }
+function vecRoad(lat,lng){
+  try{
+    if(MAPT!=='vec'||!map||!map.isStyleLoaded())return null;
+    var srcs=map.getStyle().sources,src=null,k;
+    for(k in srcs){if(srcs[k].type==='vector'){src=k;break}}
+    if(!src)return null;
+    var fs=map.querySourceFeatures(src,{sourceLayer:'transportation_name'}),best=null,bd=1e9;
+    fs.forEach(function(f){
+      var p=f.properties||{},nm=p.name||p['name:latin']||'',ref=p.ref||'';
+      if(!nm&&!ref)return;
+      var g=f.geometry,lines=g.type==='LineString'?[g.coordinates]:(g.type==='MultiLineString'?g.coordinates:[]);
+      lines.forEach(function(ln){
+        var i;
+        for(i=0;i+1<ln.length;i++){
+          var d=segDist(lat,lng,{lat:ln[i][1],lon:ln[i][0]},{lat:ln[i+1][1],lon:ln[i+1][0]});
+          if(d<bd){bd=d;best={name:nm,ref:ref}}
+        }
+      });
+    });
+    return (best&&bd<=18)?{name:best.name,ref:best.ref,d:bd}:null;
+  }catch(e){return null}
+}
 function lookupRoad(lat,lng){
+  var vr=vecRoad(lat,lng);
+  if(vr){
+    var l0=ROADSREADY?localRoad(lat,lng):null,ok=l0&&l0.d<=14&&l0.w[0]===vr.name;
+    setRoadInfo(vr.name,vr.ref,ok?l0.w[2]:0,ok?l0.w[3]:0);
+    return;
+  }
   var lr=ROADSREADY?localRoad(lat,lng):null;
   if(lr&&(lr.d<=14||!TTKEY)){setRoadInfo(lr.w[0],lr.w[1],lr.w[2],lr.w[3]);return}
-  if(TTKEY&&(!lastTT.t||Date.now()-lastTT.t>12000||haversine(lastTT.lat,lastTT.lng,lat,lng)>50)){
+  var still=me&&me.kmh<3&&lastTT.t&&haversine(lastTT.lat,lastTT.lng,lat,lng)<60&&roadText;
+  if(TTKEY&&!still&&(!lastTT.t||Date.now()-lastTT.t>12000||haversine(lastTT.lat,lastTT.lng,lat,lng)>50)){
     roadBusy=true;lastTT={lat:lat,lng:lng,t:Date.now()};
-    fetch('https://api.tomtom.com/search/2/reverseGeocode/'+lat.toFixed(5)+','+lng.toFixed(5)+'.json?key='+encodeURIComponent(TTKEY)+'&radius=60&returnSpeedLimit=true&language=en-GB')
+    fetch('https://api.tomtom.com/search/2/reverseGeocode/'+lat.toFixed(5)+','+lng.toFixed(5)+'.json?key='+encodeURIComponent(TTKEY)+'&radius=60'+(navActive?'&returnSpeedLimit=true':'')+'&language=en-GB')
     .then(function(r){if(!r.ok)throw new Error('tt');return r.json()})
     .then(function(j){
       var a=((j.addresses||[])[0]||{}).address||{};
@@ -974,7 +1021,7 @@ function lookupRoad(lat,lng){
     }).catch(function(){roadBusy=false;if(lr)setRoadInfo(lr.w[0],lr.w[1],lr.w[2],lr.w[3]);else lookupRoadOv(lat,lng)});
     return;
   }
-  if(TTKEY&&lastTT.t&&roadText){return}
+  if(TTKEY&&(still||(lastTT.t&&roadText))){return}
   if(lr){setRoadInfo(lr.w[0],lr.w[1],lr.w[2],lr.w[3]);return}
   lookupRoadOv(lat,lng);
 }
@@ -2501,6 +2548,7 @@ document.addEventListener('visibilitychange',function(){
 
 /* ---------- tetapan ---------- */
 function openSettings(){
+  renderCams();
   $('#swVoice').checked=VOICE;$('#selVeng').value=VENG;$('#swDim').checked=DIM;$('#selLang').value=LANG;
   $('#selVeh').value=VEH;$('#selPref').value=PREF;$('#swHwy').checked=HWY;
   $('#selTheme').value=THEME;$('#swAZ').checked=AZ;$('#selZ').value=String(ZOFF);
@@ -2582,7 +2630,7 @@ var EN_FULL={
 
 Object.assign(EN_FULL,{
 'Alternatif':'Alternative',
-'Tempat di peta':'Places on map','Laluan':'Routes','Tukar laluan':'Change route','Mengira laluan dari lokasi semasa...':'Calculating routes from your location...','Trafik langsung di peta (merah = sesak)':'Live traffic on map (red = congested)','Enjin suara':'Voice engine','Auto: suara Google (natural)':'Auto: Google voice (natural)','Auto: guna suara Google yang natural. Semua arahan perjalanan dimuat turun awal semasa kau tekan Mula, jadi suara masih jalan bila internet terputus di tengah jalan. Kalau gagal, app guna suara sistem phone.':'Auto: uses the natural Google voice. All trip phrases are downloaded when you tap Start, so voice keeps working if the internet drops mid-trip. If it fails, the app uses the phone system voice.','Suara sistem phone':'Phone system voice','Pilih tempat yang mahu dipaparkan pada peta. Lalai: semua dimatikan supaya skrin kemas.':'Choose which places to show on the map. Default: all off to keep the screen clean.',
+'Tempat di peta':'Places on map','Kamera laju yang kau tanda':'Speed cameras you marked','Tandakan kamera laju di lokasi ini?':'Mark a speed camera at this location?','Tiada kamera ditanda.':'No cameras marked.','Laluan':'Routes','Tukar laluan':'Change route','Mengira laluan dari lokasi semasa...':'Calculating routes from your location...','Trafik langsung di peta (merah = sesak)':'Live traffic on map (red = congested)','Enjin suara':'Voice engine','Auto: suara Google (natural)':'Auto: Google voice (natural)','Auto: guna suara Google yang natural. Semua arahan perjalanan dimuat turun awal semasa kau tekan Mula, jadi suara masih jalan bila internet terputus di tengah jalan. Kalau gagal, app guna suara sistem phone.':'Auto: uses the natural Google voice. All trip phrases are downloaded when you tap Start, so voice keeps working if the internet drops mid-trip. If it fails, the app uses the phone system voice.','Suara sistem phone':'Phone system voice','Pilih tempat yang mahu dipaparkan pada peta. Lalai: semua dimatikan supaya skrin kemas.':'Choose which places to show on the map. Default: all off to keep the screen clean.',
 'Matikan JOMAPZ sepenuhnya? Navigasi, GPS dan suara akan berhenti.':'Shut down JOMAPZ completely? Navigation, GPS and voice will stop.','OK':'OK',
 'Tambah':'Add','Simpan tempat':'Save place','Ubah tempat':'Edit place','Nama':'Name','Ikon':'Icon','Lokasi':'Location','Contoh: Rumah mak':'Example: Mum\'s house',
 '📍 Guna lokasi saya sekarang':'📍 Use my current location','Padam':'Delete','Simpan':'Save','Jenis peta':'Map type','Lalai':'Default','Standard OSM':'Standard OSM',
